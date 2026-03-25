@@ -1,0 +1,61 @@
+version: "3.8"
+
+services:
+  # --- PostgreSQL Database ---
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: ppg
+      POSTGRES_PASSWORD: ppg
+      POSTGRES_DB: ppg
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ppg"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # --- SentinelLM Gateway (FastAPI) ---
+  gateway:
+    build:
+      context: ./gateway
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      SENTINELLM_DATABASE_URL: "postgresql+asyncpg://ppg:ppg@db:5432/ppg"
+      SENTINELLM_DATABASE_URL_SYNC: "postgresql://ppg:ppg@db:5432/ppg"
+      SENTINELLM_OLLAMA_BASE_URL: "http://host.docker.internal:11434"
+      SENTINELLM_LLM_BACKEND: "ollama"
+      SENTINELLM_MODEL_PATH: "/app/model/trained"
+      SENTINELLM_POLICY_PATH: "/app/policies/default.yaml"
+      SENTINELLM_SEMANTIC_MODEL_ENABLED: "true"
+      SENTINELLM_DEBUG: "false"
+    volumes:
+      - ./model/trained:/app/model/trained:ro
+    depends_on:
+      db:
+        condition: service_healthy
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+  # --- Streamlit Admin Dashboard ---
+  admin:
+    build:
+      context: ./admin
+      dockerfile: Dockerfile
+    ports:
+      - "8501:8501"
+    environment:
+      DATABASE_URL: "postgresql://ppg:ppg@db:5432/ppg"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  pgdata:

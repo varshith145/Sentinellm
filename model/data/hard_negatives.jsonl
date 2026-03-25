@@ -1,0 +1,153 @@
+{"text": "the email protocol uses SMTP on port 25", "entities": []}
+{"text": "call the function with 10 arguments", "entities": []}
+{"text": "the password field in the schema is required", "entities": []}
+{"text": "use a token-based authentication flow", "entities": []}
+{"text": "social security is an important government program", "entities": []}
+{"text": "enter your phone number in the settings page", "entities": []}
+{"text": "the credit card module handles payment processing", "entities": []}
+{"text": "email validation uses a regular expression pattern", "entities": []}
+{"text": "we use AWS for cloud hosting and deployment", "entities": []}
+{"text": "the GitHub repository has 500 stars", "entities": []}
+{"text": "JSON Web Tokens are used for stateless authentication", "entities": []}
+{"text": "the user model has a name field and an email field", "entities": []}
+{"text": "five servers are running in production", "entities": []}
+{"text": "the phone rang three times before going to voicemail", "entities": []}
+{"text": "social media marketing increased by forty percent this quarter", "entities": []}
+{"text": "the card game requires at least four players", "entities": []}
+{"text": "my computer has a four core processor", "entities": []}
+{"text": "the key to success is hard work and dedication", "entities": []}
+{"text": "set the password minimum length to eight characters", "entities": []}
+{"text": "the secret ingredient in the recipe is vanilla extract", "entities": []}
+{"text": "tokens expire after twenty four hours", "entities": []}
+{"text": "the address bar shows the current URL", "entities": []}
+{"text": "we need to call the API endpoint for user data", "entities": []}
+{"text": "the credit system awards points for completed tasks", "entities": []}
+{"text": "the name attribute is required in the HTML form", "entities": []}
+{"text": "personal computers revolutionized the office in the eighties", "entities": []}
+{"text": "the security team reviewed the codebase last week", "entities": []}
+{"text": "identification of bugs is crucial for software quality", "entities": []}
+{"text": "the number of users grew by five thousand this month", "entities": []}
+{"text": "driver code initializes the database connection pool", "entities": []}
+{"text": "the license agreement must be accepted before installation", "entities": []}
+{"text": "passport.js is a popular Node.js authentication middleware", "entities": []}
+{"text": "the bank of functions in the utility library is extensive", "entities": []}
+{"text": "social login allows users to sign in with Google or Facebook", "entities": []}
+{"text": "the insurance module covers health dental and vision plans", "entities": []}
+{"text": "the routing table contains five hundred entries", "entities": []}
+{"text": "PIN stands for Personal Identification Number in banking", "entities": []}
+{"text": "medical records should be stored in encrypted format", "entities": []}
+{"text": "the tax calculation engine uses brackets and rates", "entities": []}
+{"text": "military time uses a twenty four hour clock format", "entities": []}
+{"text": "the date of the release is scheduled for next quarter", "entities": []}
+{"text": "a key value store is useful for caching frequently accessed data", "entities": []}
+{"text": "the secret sauce of our platform is the recommendation engine", "entities": []}
+{"text": "address translation maps virtual addresses to physical ones", "entities": []}
+{"text": "the mail server uses port four forty three for TLS", "entities": []}
+{"text": "our phone support team handles over one thousand calls daily", "entities": []}
+{"text": "the name resolution process converts domain names to IP addresses", "entities": []}
+{"text": "personal branding is important for career development", "entities": []}
+{"text": "card sorting helps improve information architecture", "entities": []}
+{"text": "the token bucket algorithm is used for rate limiting", "entities": []}
+{"text": "five nines availability means ninety nine point nine nine nine percent uptime", "entities": []}
+{"text": "the access control list defines who can read and write resources", "entities": []}
+{"text": "email marketing campaigns have an average open rate of twenty percent", "entities": []}
+{"text": "the password hashing algorithm uses bcrypt with twelve rounds", "entities": []}
+{"text": "the SSN column in the users table should be encrypted at rest", "entities": []}
+{"text": "credit scoring models use machine learning for predictions", "entities": []}
+{"text": "the phone tree connects callers to the appropriate department", "entities": []}
+{"text": "social engineering attacks target human vulnerabilities", "entities": []}
+{"text": "the healthcare API returns patient information securely", "entities": []}
+{"text": "driver installation completed successfully", "entities": []}
+{"text": "the license server validates activation codes", "entities": []}
+{"text": "passport control at international airports uses biometric scanning", "entities": []}
+{"text": "the bank reconciliation process runs at midnight", "entities": []}
+{"text": "insurance claims processing takes three to five business days", "entities": []}
+{"text": "the routing middleware handles path matching and parameter extraction", "entities": []}
+{"text": "personal development budgets are set at two thousand dollars per employee", "entities": []}
+{"text": "the medical imaging system uses DICOM protocol", "entities": []}
+{"text": "tax brackets change based on annual income thresholds", "entities": []}
+{"text": "the date picker component supports multiple formats", "entities": []}
+{"text": "a secret management service like HashiCorp Vault stores credentials securely", "entities": []}
+{"text": "key rotation should happen every ninety days", "entities": []}
+{"text": "the address parser breaks addresses into components like street city and state", "entities": []}
+{"text": "email bounces indicate invalid or full mailboxes", "entities": []}
+{"text": "the credit union offers lower interest rates than traditional banks", "entities": []}
+{"text": "name collision occurs when two variables share the same identifier", "entities": []}
+{"text": "the token generator creates random strings for session management", "entities": []}
+{"text": "identification documents must be submitted for KYC compliance", "entities": []}
+{"text": "phone notifications can be configured in the user preferences", "entities": []}
+{"text": "the card reader hardware is connected via USB", "entities": []}
+{"text": "the password manager extension auto-fills login forms", "entities": []}
+{"text": "social proof like reviews and testimonials increases conversion rates", "entities": []}
+{"text": "the access log shows all API requests from the last thirty days", "entities": []}
+{"text": "the security audit found no critical vulnerabilities", "entities": []}
+{"text": "personal data protection laws vary by country and region", "entities": []}
+{"text": "the number formatter adds commas for thousands separators", "entities": []}
+{"text": "insurance premium calculations depend on risk factors", "entities": []}
+{"text": "the healthcare dashboard shows patient statistics and trends", "entities": []}
+{"text": "the five key metrics we track are DAU MAU retention churn and revenue", "entities": []}
+{"text": "the key performance indicators are reviewed quarterly", "entities": []}
+{"text": "the address verification service confirms delivery locations", "entities": []}
+{"text": "phone trees with more than five levels frustrate callers", "entities": []}
+{"text": "name badges are required for all conference attendees", "entities": []}
+{"text": "the credit limit is calculated based on the applicant's income and history", "entities": []}
+{"text": "four factor authentication combines something you know have are and somewhere you are", "entities": []}
+{"text": "the token refresh endpoint returns a new access token", "entities": []}
+{"text": "driver performance metrics include response time and throughput", "entities": []}
+{"text": "the license plate recognition system uses computer vision", "entities": []}
+{"text": "passport strength is measured by the number of visa-free destinations", "entities": []}
+{"text": "the bank holiday schedule varies by country", "entities": []}
+{"text": "social distancing guidelines recommend keeping six feet apart", "entities": []}
+{"text": "the email template uses handlebars syntax for dynamic content", "entities": []}
+{"text": "security headers like CSP and HSTS protect against common attacks", "entities": []}
+{"text": "personal computers now have up to one hundred twenty eight gigabytes of RAM", "entities": []}
+{"text": "the password policy requires uppercase lowercase numbers and special characters", "entities": []}
+{"text": "credit bureaus maintain financial records for consumers", "entities": []}
+{"text": "the phone API supports both SMS and voice calls", "entities": []}
+{"text": "the card component in the UI framework supports images and actions", "entities": []}
+{"text": "identification methods include fingerprint face and iris scanning", "entities": []}
+{"text": "the date format should follow ISO 8601 YYYY-MM-DD", "entities": []}
+{"text": "tax documents are generated annually for each employee", "entities": []}
+{"text": "name servers translate domain names into IP addresses", "entities": []}
+{"text": "address space layout randomization prevents buffer overflow attacks", "entities": []}
+{"text": "the secret rotation lambda function runs every thirty days", "entities": []}
+{"text": "the medical billing system integrates with insurance providers", "entities": []}
+{"text": "the access token has a one hour expiration time", "entities": []}
+{"text": "the ATM limits cash withdrawals to five hundred dollars", "entities": []}
+{"text": "the healthcare provider network includes over two thousand clinics", "entities": []}
+{"text": "the card decline rate should be below two percent of transactions", "entities": []}
+{"text": "key management is essential for encryption at scale", "entities": []}
+{"text": "nine users reported the bug through our feedback channel", "entities": []}
+{"text": "the email deliverability rate improved after implementing SPF and DKIM", "entities": []}
+{"text": "the three letter agency acronym is NSA FBI or CIA", "entities": []}
+{"text": "the routing number is a nine digit code used to identify banks", "entities": []}
+{"text": "the phone system supports conference calls with up to twenty participants", "entities": []}
+{"text": "personal information should be encrypted both in transit and at rest", "entities": []}
+{"text": "credit monitoring services alert users to changes in their reports", "entities": []}
+{"text": "the security operations center monitors twenty four seven", "entities": []}
+{"text": "the driver's license API validates state-issued identification", "entities": []}
+{"text": "passport processing times range from four to six weeks", "entities": []}
+{"text": "the insurance deductible is set at one thousand dollars", "entities": []}
+{"text": "a social security office is located in every major city", "entities": []}
+{"text": "the token introspection endpoint checks if a token is still valid", "entities": []}
+{"text": "the bank statement shows transactions from the past ninety days", "entities": []}
+{"text": "the email queue processes up to ten thousand messages per minute", "entities": []}
+{"text": "name mangling in Python uses double underscores to prevent conflicts", "entities": []}
+{"text": "the access review process happens annually for all employees", "entities": []}
+{"text": "the password length should be between twelve and sixty four characters", "entities": []}
+{"text": "the card network processes millions of transactions daily", "entities": []}
+{"text": "the medical record system uses HL7 FHIR standards", "entities": []}
+{"text": "the PIN pad is used for entering the card verification code", "entities": []}
+{"text": "the key derivation function PBKDF2 applies thousands of iterations", "entities": []}
+{"text": "tax withholding is calculated based on the W-4 form", "entities": []}
+{"text": "the date of birth is a common field in user registration forms", "entities": []}
+{"text": "address autocomplete reduces form abandonment rates", "entities": []}
+{"text": "the secret scanning tool checks repositories for exposed credentials", "entities": []}
+{"text": "the email server supports both IMAP and POP3 protocols", "entities": []}
+{"text": "personal finance tools help users track spending and budgets", "entities": []}
+{"text": "the card verification value is a three digit security code", "entities": []}
+{"text": "credit reports contain payment history and outstanding balances", "entities": []}
+{"text": "the healthcare exchange marketplace opens enrollment in November", "entities": []}
+{"text": "the phone number format varies across different countries", "entities": []}
+{"text": "insurance underwriting uses statistical models to assess risk", "entities": []}
+{"text": "the security team responds to incidents within fifteen minutes", "entities": []}

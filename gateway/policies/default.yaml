@@ -1,0 +1,70 @@
+policy_id: "default-v1"
+description: "Default SentinelLM policy — mask PII, block secrets"
+
+rules:
+  # PII rules — action: MASK
+  - entity_type: EMAIL
+    category: PII
+    action: MASK
+    min_confidence: 0.7
+
+  - entity_type: PHONE
+    category: PII
+    action: MASK
+    min_confidence: 0.7
+
+  - entity_type: SSN
+    category: PII
+    action: MASK
+    min_confidence: 0.5    # Lower threshold — SSNs are high risk
+
+  - entity_type: CREDIT_CARD
+    category: PII
+    action: MASK
+    min_confidence: 0.8
+
+  - entity_type: PERSON_NAME
+    category: PII
+    action: MASK
+    min_confidence: 0.85   # Higher threshold to avoid false positives on names
+
+  - entity_type: GENERIC_PII
+    category: PII
+    action: MASK
+    min_confidence: 0.7
+
+  # Secret rules — action: BLOCK
+  - entity_type: AWS_KEY
+    category: SECRET
+    action: BLOCK
+    min_confidence: 0.5    # Any confidence — block
+
+  - entity_type: GITHUB_TOKEN
+    category: SECRET
+    action: BLOCK
+    min_confidence: 0.5
+
+  - entity_type: JWT
+    category: SECRET
+    action: BLOCK
+    min_confidence: 0.7
+
+  - entity_type: PASSWORD
+    category: SECRET
+    action: BLOCK
+    min_confidence: 0.6
+
+  - entity_type: GENERIC_SECRET
+    category: SECRET
+    action: BLOCK
+    min_confidence: 0.6
+
+# Default action for entity types not listed above
+default_action: ALLOW
+
+# Output scanning policy
+output_scanning:
+  enabled: true
+  # For output, we mask instead of block (model already generated it)
+  secret_action: MASK   # Don't block the whole response, just redact
+  pii_action: MASK

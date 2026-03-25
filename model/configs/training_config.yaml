@@ -1,0 +1,24 @@
+model:
+  base: "distilbert-base-uncased"
+  num_labels: 5
+  labels: ["O", "B-PII", "I-PII", "B-SECRET", "I-SECRET"]
+
+training:
+  epochs: 5
+  batch_size: 16
+  learning_rate: 2e-5
+  weight_decay: 0.01
+  warmup_ratio: 0.1
+  max_length: 512
+  seed: 42
+
+data:
+  train_split: 0.8
+  val_split: 0.1
+  test_split: 0.1
+  synthetic_data_path: "model/data/synthetic_obfuscated.jsonl"
+  hard_negatives_path: "model/data/hard_negatives.jsonl"
+
+evaluation:
+  metric: "f1"
+  save_best: true

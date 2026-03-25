@@ -1,0 +1,71 @@
+name: SentinelLM CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint:
+    name: Lint & Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install ruff mypy
+          pip install -r gateway/requirements.txt
+
+      - name: Run ruff (lint)
+        run: ruff check gateway/ tests/
+
+      - name: Run ruff (format check)
+        run: ruff format --check gateway/ tests/
+
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: ppg
+          POSTGRES_PASSWORD: ppg
+          POSTGRES_DB: ppg
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install -r gateway/requirements.txt
+          python -m spacy download en_core_web_lg
+
+      - name: Run tests
+        env:
+          SENTINELLM_DATABASE_URL: "postgresql+asyncpg://ppg:ppg@localhost:5432/ppg"
+          SENTINELLM_DATABASE_URL_SYNC: "postgresql://ppg:ppg@localhost:5432/ppg"
+          SENTINELLM_SEMANTIC_MODEL_ENABLED: "false"
+          SENTINELLM_POLICY_PATH: "gateway/policies/default.yaml"
+        run: |
+          cd .
+          python -m pytest tests/ -v --tb=short
