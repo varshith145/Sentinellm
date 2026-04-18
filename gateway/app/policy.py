@@ -21,9 +21,9 @@ class PolicyDecision:
     def __init__(
         self, action: str, reasons: list[str], findings: list[Finding]
     ) -> None:
-        self.action = action        # "ALLOW", "MASK", or "BLOCK"
-        self.reasons = reasons      # Human-readable reason strings
-        self.findings = findings    # Findings that triggered the decision
+        self.action = action  # "ALLOW", "MASK", or "BLOCK"
+        self.reasons = reasons  # Human-readable reason strings
+        self.findings = findings  # Findings that triggered the decision
 
 
 class PolicyEngine:

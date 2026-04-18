@@ -20,6 +20,7 @@ from app.redact import redact_text
 
 # ── Shared Policy Fixture ───────────────────────────────────────
 
+
 @pytest.fixture
 def policy(tmp_path):
     """
@@ -111,6 +112,7 @@ def orchestrator(regex_detector):
 #  CLEAN TEXT → ALLOW
 # ═══════════════════════════════════════════════════════════════
 
+
 class TestCleanTextAllowed:
     """Text with no sensitive data must pass through untouched."""
 
@@ -149,6 +151,7 @@ class TestCleanTextAllowed:
 # ═══════════════════════════════════════════════════════════════
 #  PII DETECTION → MASK
 # ═══════════════════════════════════════════════════════════════
+
 
 class TestPIITriggersMAsk:
     """Real PII in text must produce MASK decision and redacted output."""
@@ -216,6 +219,7 @@ class TestPIITriggersMAsk:
 #  SECRET DETECTION → BLOCK
 # ═══════════════════════════════════════════════════════════════
 
+
 class TestSecretTriggersBlock:
     """Secrets in text must produce BLOCK decision — redaction not performed."""
 
@@ -259,6 +263,7 @@ class TestSecretTriggersBlock:
 #  OUTPUT SCANNING MODE
 # ═══════════════════════════════════════════════════════════════
 
+
 class TestOutputScanningMode:
     """In output mode, BLOCK → MASK so response is not swallowed."""
 
@@ -291,11 +296,14 @@ class TestOutputScanningMode:
 #  REDACTED TEXT INVARIANTS
 # ═══════════════════════════════════════════════════════════════
 
+
 class TestRedactionInvariants:
     """Properties that must hold after redaction regardless of input."""
 
     @pytest.mark.asyncio
-    async def test_redacted_text_does_not_contain_original_pii(self, orchestrator, policy):
+    async def test_redacted_text_does_not_contain_original_pii(
+        self, orchestrator, policy
+    ):
         sensitive_values = [
             "alice@example.com",
             "555-123-4567",
@@ -321,7 +329,9 @@ class TestRedactionInvariants:
         assert counts == {}
 
     @pytest.mark.asyncio
-    async def test_redaction_count_matches_detected_entities(self, orchestrator, policy):
+    async def test_redaction_count_matches_detected_entities(
+        self, orchestrator, policy
+    ):
         """Number of EMAIL redactions must equal number of emails detected."""
         text = "Send to alice@corp.com and bob@example.org"
         findings = await orchestrator.scan(text)

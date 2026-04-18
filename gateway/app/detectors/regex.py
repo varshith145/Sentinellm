@@ -9,7 +9,6 @@ secrets (AWS keys, GitHub tokens, JWTs).
 import re
 from app.detectors.base import (
     BaseDetector,
-    EntityCategory,
     EntityType,
     Finding,
     ENTITY_CATEGORY_MAP,
@@ -17,6 +16,7 @@ from app.detectors.base import (
 
 
 # --- Luhn Validation (Credit Cards) ---
+
 
 def luhn_check(number: str) -> bool:
     """Validate a credit card number using the Luhn algorithm."""
@@ -40,45 +40,45 @@ _PATTERNS: list[tuple[EntityType, re.Pattern, float, bool]] = [
     # PII patterns
     (
         EntityType.EMAIL,
-        re.compile(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'),
+        re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b"),
         0.95,
         False,
     ),
     (
         EntityType.PHONE,
-        re.compile(r'\b(?:\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b'),
+        re.compile(r"\b(?:\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b"),
         0.95,
         False,
     ),
     (
         EntityType.SSN,
-        re.compile(r'\b\d{3}-\d{2}-\d{4}\b'),
+        re.compile(r"\b\d{3}-\d{2}-\d{4}\b"),
         0.95,
         False,
     ),
     (
         EntityType.CREDIT_CARD,
-        re.compile(r'\b(?:\d{4}[-\s]?){3}\d{4}\b'),
+        re.compile(r"\b(?:\d{4}[-\s]?){3}\d{4}\b"),
         0.99,  # Only returned if Luhn passes
         True,
     ),
     # Secret patterns
     (
         EntityType.AWS_KEY,
-        re.compile(r'\bAKIA[0-9A-Z]{16}\b'),
+        re.compile(r"\bAKIA[0-9A-Z]{16}\b"),
         0.95,
         False,
     ),
     (
         EntityType.GITHUB_TOKEN,
-        re.compile(r'\b(ghp_[A-Za-z0-9]{36}|github_pat_[A-Za-z0-9_]{22,})\b'),
+        re.compile(r"\b(ghp_[A-Za-z0-9]{36}|github_pat_[A-Za-z0-9_]{22,})\b"),
         0.95,
         False,
     ),
     (
         EntityType.JWT,
         re.compile(
-            r'\beyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\b'
+            r"\beyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\b"
         ),
         0.95,
         False,

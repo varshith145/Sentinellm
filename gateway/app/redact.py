@@ -24,9 +24,7 @@ REDACTION_TOKENS: dict[EntityType, str] = {
 }
 
 
-def redact_text(
-    text: str, findings: list[Finding]
-) -> tuple[str, dict[str, int]]:
+def redact_text(text: str, findings: list[Finding]) -> tuple[str, dict[str, int]]:
     """
     Replace matched spans with redaction tokens.
 

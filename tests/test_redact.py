@@ -14,6 +14,7 @@ from app.redact import REDACTION_TOKENS, redact_text
 
 # ── Helper ─────────────────────────────────────────────────────
 
+
 def _f(
     entity_type: EntityType,
     start: int,
@@ -38,22 +39,26 @@ def _f(
 #  ALL ENTITY TYPES → CORRECT REDACTION TOKEN
 # ═══════════════════════════════════════════════════════════════
 
+
 class TestRedactionTokens:
     """Every entity type must map to its correct replacement token."""
 
-    @pytest.mark.parametrize("entity_type,expected_token", [
-        (EntityType.EMAIL,          "[REDACTED_EMAIL]"),
-        (EntityType.PHONE,          "[REDACTED_PHONE]"),
-        (EntityType.SSN,            "[REDACTED_SSN]"),
-        (EntityType.CREDIT_CARD,    "[REDACTED_CC]"),
-        (EntityType.PERSON_NAME,    "[REDACTED_NAME]"),
-        (EntityType.AWS_KEY,        "[REDACTED_SECRET]"),
-        (EntityType.GITHUB_TOKEN,   "[REDACTED_SECRET]"),
-        (EntityType.JWT,            "[REDACTED_SECRET]"),
-        (EntityType.PASSWORD,       "[REDACTED_SECRET]"),
-        (EntityType.GENERIC_PII,    "[REDACTED_PII]"),
-        (EntityType.GENERIC_SECRET, "[REDACTED_SECRET]"),
-    ])
+    @pytest.mark.parametrize(
+        "entity_type,expected_token",
+        [
+            (EntityType.EMAIL, "[REDACTED_EMAIL]"),
+            (EntityType.PHONE, "[REDACTED_PHONE]"),
+            (EntityType.SSN, "[REDACTED_SSN]"),
+            (EntityType.CREDIT_CARD, "[REDACTED_CC]"),
+            (EntityType.PERSON_NAME, "[REDACTED_NAME]"),
+            (EntityType.AWS_KEY, "[REDACTED_SECRET]"),
+            (EntityType.GITHUB_TOKEN, "[REDACTED_SECRET]"),
+            (EntityType.JWT, "[REDACTED_SECRET]"),
+            (EntityType.PASSWORD, "[REDACTED_SECRET]"),
+            (EntityType.GENERIC_PII, "[REDACTED_PII]"),
+            (EntityType.GENERIC_SECRET, "[REDACTED_SECRET]"),
+        ],
+    )
     def test_token_for_entity_type(self, entity_type, expected_token):
         text = f"prefix {entity_type.value} suffix"
         start = len("prefix ")
@@ -75,6 +80,7 @@ class TestRedactionTokens:
 # ═══════════════════════════════════════════════════════════════
 #  POSITION TESTS
 # ═══════════════════════════════════════════════════════════════
+
 
 class TestPositions:
     """Entity at start, middle, and end of string — surrounding text preserved."""
@@ -118,13 +124,14 @@ class TestPositions:
 #  MULTIPLE ENTITIES
 # ═══════════════════════════════════════════════════════════════
 
+
 class TestMultipleEntities:
     """Multiple non-overlapping findings must all be redacted correctly."""
 
     def test_two_non_overlapping_findings(self):
         text = "Email john@test.com, phone 555-123-4567."
         findings = [
-            _f(EntityType.EMAIL, 6,  19, "john@test.com"),
+            _f(EntityType.EMAIL, 6, 19, "john@test.com"),
             _f(EntityType.PHONE, 27, 39, "555-123-4567"),
         ]
         redacted, counts = redact_text(text, findings)
@@ -137,7 +144,7 @@ class TestMultipleEntities:
     def test_two_same_type_findings_count_aggregated(self):
         text = "Email a@b.com and c@d.com"
         findings = [
-            _f(EntityType.EMAIL, 6,  13, "a@b.com"),
+            _f(EntityType.EMAIL, 6, 13, "a@b.com"),
             _f(EntityType.EMAIL, 18, 25, "c@d.com"),
         ]
         redacted, counts = redact_text(text, findings)
@@ -148,7 +155,7 @@ class TestMultipleEntities:
         """Reverse-order processing must keep all offsets correct."""
         text = "A john@a.com B jane@b.com C"
         findings = [
-            _f(EntityType.EMAIL,  2, 12, "john@a.com"),
+            _f(EntityType.EMAIL, 2, 12, "john@a.com"),
             _f(EntityType.EMAIL, 15, 25, "jane@b.com"),
         ]
         redacted, counts = redact_text(text, findings)
@@ -158,14 +165,14 @@ class TestMultipleEntities:
     def test_three_different_types_all_redacted(self):
         text = "john@x.com 555-123-4567 123-45-6789"
         findings = [
-            _f(EntityType.EMAIL,  0, 10, "john@x.com"),
+            _f(EntityType.EMAIL, 0, 10, "john@x.com"),
             _f(EntityType.PHONE, 11, 23, "555-123-4567"),
-            _f(EntityType.SSN,   24, 35, "123-45-6789"),
+            _f(EntityType.SSN, 24, 35, "123-45-6789"),
         ]
         redacted, counts = redact_text(text, findings)
         assert "[REDACTED_EMAIL]" in redacted
         assert "[REDACTED_PHONE]" in redacted
-        assert "[REDACTED_SSN]"   in redacted
+        assert "[REDACTED_SSN]" in redacted
         assert counts == {"EMAIL": 1, "PHONE": 1, "SSN": 1}
         # Original values must be gone
         assert "john@x.com" not in redacted
@@ -177,7 +184,7 @@ class TestMultipleEntities:
         text = "SSN 123-45-6789 and email john@test.com"
         # Provide findings in forward order (SSN before email)
         findings = [
-            _f(EntityType.SSN,   4,  15, "123-45-6789"),
+            _f(EntityType.SSN, 4, 15, "123-45-6789"),
             _f(EntityType.EMAIL, 26, 39, "john@test.com"),
         ]
         redacted, counts = redact_text(text, findings)
@@ -192,7 +199,7 @@ class TestMultipleEntities:
         # Provide findings in reverse order (email before SSN)
         findings = [
             _f(EntityType.EMAIL, 26, 39, "john@test.com"),
-            _f(EntityType.SSN,    4, 15, "123-45-6789"),
+            _f(EntityType.SSN, 4, 15, "123-45-6789"),
         ]
         redacted, counts = redact_text(text, findings)
         assert "[REDACTED_SSN]" in redacted
@@ -202,6 +209,7 @@ class TestMultipleEntities:
 # ═══════════════════════════════════════════════════════════════
 #  ADJACENT ENTITIES
 # ═══════════════════════════════════════════════════════════════
+
 
 class TestAdjacentEntities:
     """Two findings whose spans are adjacent (end == start) — both redacted."""
@@ -225,6 +233,7 @@ class TestAdjacentEntities:
 #  SPECIFIC TOKEN CORRECTNESS
 # ═══════════════════════════════════════════════════════════════
 
+
 class TestSpecificTokens:
     """Spot-check correct token for key entity types."""
 
@@ -243,8 +252,13 @@ class TestSpecificTokens:
     def test_aws_key_token(self):
         text = "Key: AKIAIOSFODNN7EXAMPLE"
         findings = [
-            _f(EntityType.AWS_KEY, 5, 25, "AKIAIOSFODNN7EXAMPLE",
-               category=EntityCategory.SECRET)
+            _f(
+                EntityType.AWS_KEY,
+                5,
+                25,
+                "AKIAIOSFODNN7EXAMPLE",
+                category=EntityCategory.SECRET,
+            )
         ]
         redacted, counts = redact_text(text, findings)
         assert redacted == "Key: [REDACTED_SECRET]"
@@ -265,8 +279,13 @@ class TestSpecificTokens:
     def test_generic_secret_token(self):
         text = "secret: hunter2"
         findings = [
-            _f(EntityType.GENERIC_SECRET, 8, 15, "hunter2",
-               category=EntityCategory.SECRET)
+            _f(
+                EntityType.GENERIC_SECRET,
+                8,
+                15,
+                "hunter2",
+                category=EntityCategory.SECRET,
+            )
         ]
         redacted, _ = redact_text(text, findings)
         assert redacted == "secret: [REDACTED_SECRET]"

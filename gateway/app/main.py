@@ -31,7 +31,6 @@ from app.detectors.orchestrator import DetectionOrchestrator
 from app.detectors.regex import RegexDetector
 from app.models import (
     ChatCompletionRequest,
-    ChatCompletionResponse,
     PPGMetadata,
     PolicyViolationResponse,
 )
@@ -68,6 +67,7 @@ async def lifespan(app: FastAPI):
     # Pass 2: Presidio
     try:
         from app.detectors.presidio_detector import PresidioDetector
+
         presidio_detector = PresidioDetector()
         detectors.append(presidio_detector)
         logger.info("Presidio detector initialized")
@@ -78,6 +78,7 @@ async def lifespan(app: FastAPI):
     if settings.semantic_model_enabled:
         try:
             from app.detectors.semantic import SemanticDetector
+
             semantic_detector = SemanticDetector(model_path=settings.model_path)
             if semantic_detector.is_available:
                 detectors.append(semantic_detector)
@@ -88,7 +89,9 @@ async def lifespan(app: FastAPI):
             logger.warning(f"Semantic detector unavailable: {e}")
 
     orchestrator = DetectionOrchestrator(detectors)
-    logger.info(f"Detection orchestrator ready with: {orchestrator.get_active_detectors()}")
+    logger.info(
+        f"Detection orchestrator ready with: {orchestrator.get_active_detectors()}"
+    )
 
     # Initialize policy engine
     policy_engine = PolicyEngine(policy_path=settings.policy_path)
@@ -118,6 +121,7 @@ app = FastAPI(
 
 # --- Health Check ---
 
+
 @app.get("/health")
 async def health():
     """Health check endpoint."""
@@ -131,6 +135,7 @@ async def health():
 
 # --- Main Chat Completions Endpoint ---
 
+
 @app.post("/v1/chat/completions")
 async def chat_completions(request: ChatCompletionRequest, raw_request: Request):
     """
@@ -142,21 +147,19 @@ async def chat_completions(request: ChatCompletionRequest, raw_request: Request)
     start_time = time.time()
 
     # Extract user ID from request body or headers
-    user_id = (
-        request.user
-        or raw_request.headers.get("X-User-Id")
-        or "anonymous"
-    )
+    user_id = request.user or raw_request.headers.get("X-User-Id") or "anonymous"
 
     # ─── Step 1: Extract scannable text ───
     texts_to_scan: list[dict] = []
     for i, msg in enumerate(request.messages):
         if msg.content:
-            texts_to_scan.append({
-                "role": msg.role,
-                "index": i,
-                "content": msg.content,
-            })
+            texts_to_scan.append(
+                {
+                    "role": msg.role,
+                    "index": i,
+                    "content": msg.content,
+                }
+            )
 
     # ─── Step 2: Run three-pass detection on all messages ───
     detection_start = time.time()
@@ -185,7 +188,9 @@ async def chat_completions(request: ChatCompletionRequest, raw_request: Request)
                 msg.content, all_findings_by_index[i]
             )
             input_redactions.update(counts)
-            sanitized_messages.append(msg.model_copy(update={"content": redacted_content}))
+            sanitized_messages.append(
+                msg.model_copy(update={"content": redacted_content})
+            )
         else:
             sanitized_messages.append(msg)
 
@@ -253,7 +258,9 @@ async def chat_completions(request: ChatCompletionRequest, raw_request: Request)
 
     # Build sanitized request payload
     sanitized_payload = request.model_dump(exclude_none=True)
-    sanitized_payload["messages"] = [m.model_dump(exclude_none=True) for m in sanitized_messages]
+    sanitized_payload["messages"] = [
+        m.model_dump(exclude_none=True) for m in sanitized_messages
+    ]
 
     # Determine backend URL
     if settings.llm_backend == "openai":
@@ -285,12 +292,22 @@ async def chat_completions(request: ChatCompletionRequest, raw_request: Request)
     except httpx.HTTPStatusError as e:
         return JSONResponse(
             status_code=e.response.status_code,
-            content={"error": {"message": f"LLM backend error: {e.response.text}", "type": "backend_error"}},
+            content={
+                "error": {
+                    "message": f"LLM backend error: {e.response.text}",
+                    "type": "backend_error",
+                }
+            },
         )
     except httpx.ConnectError:
         return JSONResponse(
             status_code=502,
-            content={"error": {"message": "Cannot connect to LLM backend", "type": "connection_error"}},
+            content={
+                "error": {
+                    "message": "Cannot connect to LLM backend",
+                    "type": "connection_error",
+                }
+            },
         )
 
     llm_latency_ms = int((time.time() - llm_start) * 1000)
@@ -321,8 +338,7 @@ async def chat_completions(request: ChatCompletionRequest, raw_request: Request)
 
     # Build response text for audit
     response_redacted = "\n".join(
-        c.get("message", {}).get("content", "")
-        for c in llm_data.get("choices", [])
+        c.get("message", {}).get("content", "") for c in llm_data.get("choices", [])
     )
 
     # ─── Step 8: Write audit record ───

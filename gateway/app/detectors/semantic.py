@@ -97,7 +97,7 @@ class SemanticDetector(BaseDetector):
             text,
             return_tensors="pt",
             truncation=True,
-            max_length=128,          # matches training max_length
+            max_length=128,  # matches training max_length
             return_offsets_mapping=True,
         )
         offset_mapping = inputs.pop("offset_mapping")[0]
@@ -105,9 +105,9 @@ class SemanticDetector(BaseDetector):
         with torch.no_grad():
             outputs = self.model(**inputs)
 
-        logits = outputs.logits[0]                      # (seq_len, num_labels)
-        probs = F.softmax(logits, dim=-1)               # real probabilities per token
-        predictions = torch.argmax(logits, dim=-1)      # (seq_len,)
+        logits = outputs.logits[0]  # (seq_len, num_labels)
+        probs = F.softmax(logits, dim=-1)  # real probabilities per token
+        predictions = torch.argmax(logits, dim=-1)  # (seq_len,)
 
         findings: list[Finding] = []
         current_entity = None
@@ -119,14 +119,22 @@ class SemanticDetector(BaseDetector):
             label = self.model.config.id2label[pred.item()]
             char_start = offset[0].item()
             char_end = offset[1].item()
-            token_prob = probs[i][pred.item()].item()   # softmax prob for predicted label
+            token_prob = probs[i][
+                pred.item()
+            ].item()  # softmax prob for predicted label
 
             # Skip special tokens ([CLS], [SEP], [PAD])
             if char_start == 0 and char_end == 0 and i > 0:
                 if current_entity:
-                    findings.append(self._make_finding(
-                        text, current_entity, current_start, current_end, current_token_probs
-                    ))
+                    findings.append(
+                        self._make_finding(
+                            text,
+                            current_entity,
+                            current_start,
+                            current_end,
+                            current_token_probs,
+                        )
+                    )
                     current_entity = None
                     current_token_probs = []
                 continue
@@ -134,10 +142,16 @@ class SemanticDetector(BaseDetector):
             if label.startswith("B-"):
                 # Flush previous span
                 if current_entity:
-                    findings.append(self._make_finding(
-                        text, current_entity, current_start, current_end, current_token_probs
-                    ))
-                current_entity = label[2:]   # "PII" or "SECRET"
+                    findings.append(
+                        self._make_finding(
+                            text,
+                            current_entity,
+                            current_start,
+                            current_end,
+                            current_token_probs,
+                        )
+                    )
+                current_entity = label[2:]  # "PII" or "SECRET"
                 current_start = char_start
                 current_end = char_end
                 current_token_probs = [token_prob]
@@ -148,17 +162,29 @@ class SemanticDetector(BaseDetector):
 
             else:
                 if current_entity:
-                    findings.append(self._make_finding(
-                        text, current_entity, current_start, current_end, current_token_probs
-                    ))
+                    findings.append(
+                        self._make_finding(
+                            text,
+                            current_entity,
+                            current_start,
+                            current_end,
+                            current_token_probs,
+                        )
+                    )
                     current_entity = None
                     current_token_probs = []
 
         # Flush final span
         if current_entity:
-            findings.append(self._make_finding(
-                text, current_entity, current_start, current_end, current_token_probs
-            ))
+            findings.append(
+                self._make_finding(
+                    text,
+                    current_entity,
+                    current_start,
+                    current_end,
+                    current_token_probs,
+                )
+            )
 
         return findings
 
@@ -180,7 +206,9 @@ class SemanticDetector(BaseDetector):
         """
         entity_type = _SEMANTIC_ENTITY_MAP.get(entity_label, EntityType.GENERIC_PII)
         category = _SEMANTIC_CATEGORY_MAP.get(entity_label, EntityCategory.PII)
-        confidence = round(sum(token_probs) / len(token_probs), 4) if token_probs else 0.5
+        confidence = (
+            round(sum(token_probs) / len(token_probs), 4) if token_probs else 0.5
+        )
 
         return Finding(
             entity_type=entity_type,

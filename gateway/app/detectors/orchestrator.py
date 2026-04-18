@@ -51,6 +51,7 @@ class DetectionOrchestrator:
             if isinstance(result, Exception):
                 # Log but don't crash — other detectors' results still valid
                 import logging
+
                 logging.getLogger(__name__).error(
                     f"Detector failed: {result}", exc_info=result
                 )

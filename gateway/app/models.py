@@ -14,8 +14,10 @@ from pydantic import BaseModel, Field
 
 # --- Request Models ---
 
+
 class ChatMessage(BaseModel):
     """A single message in the chat conversation."""
+
     role: str
     content: Optional[str] = None
     name: Optional[str] = None
@@ -32,6 +34,7 @@ class ChatCompletionRequest(BaseModel):
     Accepts all standard fields. Unknown fields are passed through
     to the LLM backend.
     """
+
     model: str
     messages: list[ChatMessage]
     temperature: Optional[float] = None
@@ -49,8 +52,10 @@ class ChatCompletionRequest(BaseModel):
 
 # --- Response Models ---
 
+
 class ChatMessageResponse(BaseModel):
     """A message in the chat completion response."""
+
     role: str
     content: Optional[str] = None
     tool_calls: Optional[list[Any]] = None
@@ -60,6 +65,7 @@ class ChatMessageResponse(BaseModel):
 
 class ChatChoice(BaseModel):
     """A single choice in the chat completion response."""
+
     index: int
     message: ChatMessageResponse
     finish_reason: Optional[str] = None
@@ -69,6 +75,7 @@ class ChatChoice(BaseModel):
 
 class Usage(BaseModel):
     """Token usage statistics."""
+
     prompt_tokens: int = 0
     completion_tokens: int = 0
     total_tokens: int = 0
@@ -82,6 +89,7 @@ class PPGMetadata(BaseModel):
 
     Contains scanning decisions, redaction counts, and latency info.
     """
+
     request_id: str
     input_decision: str
     output_decision: Optional[str] = None
@@ -96,6 +104,7 @@ class ChatCompletionResponse(BaseModel):
     """
     OpenAI-compatible chat completion response with SentinelLM metadata.
     """
+
     id: str = ""
     object: str = "chat.completion"
     created: int = 0
@@ -109,5 +118,6 @@ class ChatCompletionResponse(BaseModel):
 
 class PolicyViolationResponse(BaseModel):
     """Response returned when a request is blocked by policy."""
+
     error: dict = Field(default_factory=dict)
     ppg: Optional[PPGMetadata] = None

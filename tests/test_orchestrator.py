@@ -19,6 +19,7 @@ from app.detectors.orchestrator import DetectionOrchestrator
 
 # ── Mock Detectors ─────────────────────────────────────────────
 
+
 class MockDetector(BaseDetector):
     """Returns a fixed list of pre-configured findings."""
 
@@ -45,6 +46,7 @@ class SlowFailingDetector(BaseDetector):
 
 # ── Helper ─────────────────────────────────────────────────────
 
+
 def _f(
     start: int,
     end: int,
@@ -66,6 +68,7 @@ def _f(
 # ═══════════════════════════════════════════════════════════════
 #  BASIC SCAN BEHAVIOUR
 # ═══════════════════════════════════════════════════════════════
+
 
 class TestBasicScan:
     """Fundamental scan behaviour: empty, single detector, multi-detector."""
@@ -93,6 +96,7 @@ class TestBasicScan:
     @pytest.mark.asyncio
     async def test_empty_text_returns_empty(self):
         from app.detectors.regex import RegexDetector
+
         orchestrator = DetectionOrchestrator([RegexDetector()])
         findings = await orchestrator.scan("")
         assert findings == []
@@ -100,11 +104,13 @@ class TestBasicScan:
     @pytest.mark.asyncio
     async def test_results_sorted_by_start_position(self):
         """Findings must be returned in ascending start-position order."""
-        d = MockDetector([
-            _f(30, 40, confidence=0.9),
-            _f(0,  10, confidence=0.9),
-            _f(15, 25, confidence=0.9),
-        ])
+        d = MockDetector(
+            [
+                _f(30, 40, confidence=0.9),
+                _f(0, 10, confidence=0.9),
+                _f(15, 25, confidence=0.9),
+            ]
+        )
         orchestrator = DetectionOrchestrator([d])
         findings = await orchestrator.scan("text")
         starts = [f.start for f in findings]
@@ -114,6 +120,7 @@ class TestBasicScan:
 # ═══════════════════════════════════════════════════════════════
 #  NON-OVERLAPPING FINDINGS
 # ═══════════════════════════════════════════════════════════════
+
 
 class TestNonOverlappingFindings:
     """Non-overlapping spans from one or multiple detectors all kept."""
@@ -127,7 +134,7 @@ class TestNonOverlappingFindings:
 
     @pytest.mark.asyncio
     async def test_two_non_overlapping_different_detectors(self):
-        d1 = MockDetector([_f(0,  10, detector="regex")])
+        d1 = MockDetector([_f(0, 10, detector="regex")])
         d2 = MockDetector([_f(20, 30, detector="presidio")])
         orchestrator = DetectionOrchestrator([d1, d2])
         result = await orchestrator.scan("text")
@@ -145,6 +152,7 @@ class TestNonOverlappingFindings:
 # ═══════════════════════════════════════════════════════════════
 #  DEDUPLICATION — SAME SPAN
 # ═══════════════════════════════════════════════════════════════
+
 
 class TestSameSpanDeduplication:
     """Same span from multiple detectors → keep the best one."""
@@ -216,6 +224,7 @@ class TestSameSpanDeduplication:
 #  DEDUPLICATION — PARTIAL OVERLAP
 # ═══════════════════════════════════════════════════════════════
 
+
 class TestPartialOverlapDeduplication:
     """Partially overlapping spans: greedy algorithm keeps the first or the better."""
 
@@ -228,10 +237,12 @@ class TestPartialOverlapDeduplication:
         B.confidence (0.80) < A.confidence (0.95) → keep A.
         Result: only A.
         """
-        d = MockDetector([
-            _f(0,  15, confidence=0.95, detector="regex"),
-            _f(10, 25, confidence=0.80, detector="presidio"),
-        ])
+        d = MockDetector(
+            [
+                _f(0, 15, confidence=0.95, detector="regex"),
+                _f(10, 25, confidence=0.80, detector="presidio"),
+            ]
+        )
         orchestrator = DetectionOrchestrator([d])
         result = await orchestrator.scan("text")
         assert len(result) == 1
@@ -245,10 +256,12 @@ class TestPartialOverlapDeduplication:
         B overlaps A and has higher confidence → replace A with B.
         Result: only B (at 10-25).
         """
-        d = MockDetector([
-            _f(0,  15, confidence=0.80, detector="regex"),
-            _f(10, 25, confidence=0.95, detector="presidio"),
-        ])
+        d = MockDetector(
+            [
+                _f(0, 15, confidence=0.80, detector="regex"),
+                _f(10, 25, confidence=0.95, detector="presidio"),
+            ]
+        )
         orchestrator = DetectionOrchestrator([d])
         result = await orchestrator.scan("text")
         assert len(result) == 1
@@ -263,11 +276,13 @@ class TestPartialOverlapDeduplication:
         C: 20-30 confidence 0.95 (no overlap with whoever won)
         Result: A and C.
         """
-        d = MockDetector([
-            _f(0,  10, confidence=0.90, detector="regex"),
-            _f(5,  15, confidence=0.80, detector="presidio"),
-            _f(20, 30, confidence=0.95, detector="semantic"),
-        ])
+        d = MockDetector(
+            [
+                _f(0, 10, confidence=0.90, detector="regex"),
+                _f(5, 15, confidence=0.80, detector="presidio"),
+                _f(20, 30, confidence=0.95, detector="semantic"),
+            ]
+        )
         orchestrator = DetectionOrchestrator([d])
         result = await orchestrator.scan("text")
         assert len(result) == 2
@@ -279,6 +294,7 @@ class TestPartialOverlapDeduplication:
 # ═══════════════════════════════════════════════════════════════
 #  FAILURE RESILIENCE
 # ═══════════════════════════════════════════════════════════════
+
 
 class TestFailureResilience:
     """Failing detectors must not crash the orchestrator."""
@@ -293,9 +309,7 @@ class TestFailureResilience:
 
     @pytest.mark.asyncio
     async def test_all_detectors_failing_returns_empty(self):
-        orchestrator = DetectionOrchestrator([
-            FailingDetector(), SlowFailingDetector()
-        ])
+        orchestrator = DetectionOrchestrator([FailingDetector(), SlowFailingDetector()])
         result = await orchestrator.scan("text")
         assert result == []
 
@@ -314,16 +328,19 @@ class TestFailureResilience:
 #  GET ACTIVE DETECTORS
 # ═══════════════════════════════════════════════════════════════
 
+
 class TestGetActiveDetectors:
     """get_active_detectors() must return correct names for real detectors."""
 
     def test_regex_detector_name(self):
         from app.detectors.regex import RegexDetector
+
         orchestrator = DetectionOrchestrator([RegexDetector()])
         assert "regex" in orchestrator.get_active_detectors()
 
     def test_multiple_detectors_all_names_returned(self):
         from app.detectors.regex import RegexDetector
+
         orchestrator = DetectionOrchestrator([RegexDetector(), RegexDetector()])
         names = orchestrator.get_active_detectors()
         assert len(names) == 2

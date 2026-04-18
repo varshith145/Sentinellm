@@ -11,6 +11,7 @@ from enum import Enum
 
 class EntityType(str, Enum):
     """Types of sensitive entities that SentinelLM can detect."""
+
     EMAIL = "EMAIL"
     PHONE = "PHONE"
     SSN = "SSN"
@@ -26,6 +27,7 @@ class EntityType(str, Enum):
 
 class EntityCategory(str, Enum):
     """High-level category of a detected entity."""
+
     PII = "PII"
     SECRET = "SECRET"
 
@@ -61,6 +63,7 @@ class Finding:
         detector: Name of the detector that produced this finding
                   ("regex", "presidio", or "semantic").
     """
+
     entity_type: EntityType
     category: EntityCategory
     start: int

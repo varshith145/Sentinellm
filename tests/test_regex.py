@@ -20,29 +20,33 @@ def detector():
 #  LUHN ALGORITHM
 # ═══════════════════════════════════════════════════════════════
 
+
 class TestLuhnAlgorithm:
     """Luhn validation: valid cards, invalid cards, edge cases."""
 
-    @pytest.mark.parametrize("number,expected", [
-        # Valid Luhn numbers (known test vectors)
-        ("4532015112830366", True),   # Visa
-        ("5425233430109903", True),   # Mastercard
-        ("4916338506082832", True),   # Visa
-        ("6011111111111117", True),   # Discover
-        ("3530111333300000", True),   # JCB 16-digit
-        # Invalid — one digit off
-        ("4532015112830367", False),
-        ("4532015112830365", False),
-        # Random invalid
-        ("1234567890123456", False),
-        ("9999999999999999", False),
-        ("1111111111111111", False),  # sum=24, not divisible by 10
-        # Wrong length — always False
-        ("453201511283036",  False),  # 15 digits
-        ("45320151128303660", False), # 17 digits
-        ("123",              False),
-        ("",                 False),
-    ])
+    @pytest.mark.parametrize(
+        "number,expected",
+        [
+            # Valid Luhn numbers (known test vectors)
+            ("4532015112830366", True),  # Visa
+            ("5425233430109903", True),  # Mastercard
+            ("4916338506082832", True),  # Visa
+            ("6011111111111117", True),  # Discover
+            ("3530111333300000", True),  # JCB 16-digit
+            # Invalid — one digit off
+            ("4532015112830367", False),
+            ("4532015112830365", False),
+            # Random invalid
+            ("1234567890123456", False),
+            ("9999999999999999", False),
+            ("1111111111111111", False),  # sum=24, not divisible by 10
+            # Wrong length — always False
+            ("453201511283036", False),  # 15 digits
+            ("45320151128303660", False),  # 17 digits
+            ("123", False),
+            ("", False),
+        ],
+    )
     def test_luhn_numeric(self, number, expected):
         assert luhn_check(number) == expected
 
@@ -66,19 +70,23 @@ class TestLuhnAlgorithm:
 #  EMAIL
 # ═══════════════════════════════════════════════════════════════
 
+
 class TestEmailDetection:
     """Email detection: standard formats, edge cases, true negatives."""
 
     @pytest.mark.asyncio
-    @pytest.mark.parametrize("text,expected_match", [
-        ("user@example.com",                   "user@example.com"),
-        ("john.doe@company.org",               "john.doe@company.org"),
-        ("user+tag@sub.domain.co.uk",          "user+tag@sub.domain.co.uk"),
-        ("123numeric@test.io",                 "123numeric@test.io"),
-        ("user_name@hyphen-domain.com",        "user_name@hyphen-domain.com"),
-        ("UPPER@EXAMPLE.COM",                  "UPPER@EXAMPLE.COM"),
-        ("a@b.co",                             "a@b.co"),  # Minimal valid
-    ])
+    @pytest.mark.parametrize(
+        "text,expected_match",
+        [
+            ("user@example.com", "user@example.com"),
+            ("john.doe@company.org", "john.doe@company.org"),
+            ("user+tag@sub.domain.co.uk", "user+tag@sub.domain.co.uk"),
+            ("123numeric@test.io", "123numeric@test.io"),
+            ("user_name@hyphen-domain.com", "user_name@hyphen-domain.com"),
+            ("UPPER@EXAMPLE.COM", "UPPER@EXAMPLE.COM"),
+            ("a@b.co", "a@b.co"),  # Minimal valid
+        ],
+    )
     async def test_detects_valid_email(self, detector, text, expected_match):
         findings = await detector.detect(text)
         emails = [f for f in findings if f.entity_type == EntityType.EMAIL]
@@ -101,7 +109,7 @@ class TestEmailDetection:
         emails = [f for f in findings if f.entity_type == EntityType.EMAIL]
         assert len(emails) == 1
         f = emails[0]
-        assert text[f.start:f.end] == "john@test.com"
+        assert text[f.start : f.end] == "john@test.com"
 
     @pytest.mark.asyncio
     async def test_multiple_emails_in_sentence(self, detector):
@@ -114,12 +122,15 @@ class TestEmailDetection:
         assert "bob@work.io" in matched
 
     @pytest.mark.asyncio
-    @pytest.mark.parametrize("text", [
-        "no at sign here",
-        "user at example dot com",   # Obfuscated — regex is blind
-        "email validation checks for @-sign",
-        "just a sentence about email protocols",
-    ])
+    @pytest.mark.parametrize(
+        "text",
+        [
+            "no at sign here",
+            "user at example dot com",  # Obfuscated — regex is blind
+            "email validation checks for @-sign",
+            "just a sentence about email protocols",
+        ],
+    )
     async def test_no_false_positive_email(self, detector, text):
         findings = await detector.detect(text)
         emails = [f for f in findings if f.entity_type == EntityType.EMAIL]
@@ -130,20 +141,24 @@ class TestEmailDetection:
 #  PHONE
 # ═══════════════════════════════════════════════════════════════
 
+
 class TestPhoneDetection:
     """Phone detection: all standard US formats, true negatives."""
 
     @pytest.mark.asyncio
-    @pytest.mark.parametrize("text", [
-        "Call 555-123-4567",
-        "Call (555) 123-4567",
-        "Call 555.123.4567",
-        "Call 555 123 4567",
-        "Call 5551234567",
-        "Call +1-555-123-4567",
-        "Call +1 555 123 4567",
-        "Call 1-800-555-1234",
-    ])
+    @pytest.mark.parametrize(
+        "text",
+        [
+            "Call 555-123-4567",
+            "Call (555) 123-4567",
+            "Call 555.123.4567",
+            "Call 555 123 4567",
+            "Call 5551234567",
+            "Call +1-555-123-4567",
+            "Call +1 555 123 4567",
+            "Call 1-800-555-1234",
+        ],
+    )
     async def test_detects_phone_format(self, detector, text):
         findings = await detector.detect(text)
         phones = [f for f in findings if f.entity_type == EntityType.PHONE]
@@ -165,15 +180,18 @@ class TestPhoneDetection:
         phones = [f for f in findings if f.entity_type == EntityType.PHONE]
         assert len(phones) == 1
         f = phones[0]
-        assert text[f.start:f.end] == "555-123-4567"
+        assert text[f.start : f.end] == "555-123-4567"
 
     @pytest.mark.asyncio
-    @pytest.mark.parametrize("text", [
-        "I have 5 items and 12 apples",
-        "call me five five five one two three four five six seven",  # Spelled out
-        "12345",                   # Too short
-        "12345678",                # 8 digits — not a valid phone
-    ])
+    @pytest.mark.parametrize(
+        "text",
+        [
+            "I have 5 items and 12 apples",
+            "call me five five five one two three four five six seven",  # Spelled out
+            "12345",  # Too short
+            "12345678",  # 8 digits — not a valid phone
+        ],
+    )
     async def test_no_false_positive_phone(self, detector, text):
         findings = await detector.detect(text)
         phones = [f for f in findings if f.entity_type == EntityType.PHONE]
@@ -183,6 +201,7 @@ class TestPhoneDetection:
 # ═══════════════════════════════════════════════════════════════
 #  SSN
 # ═══════════════════════════════════════════════════════════════
+
 
 class TestSSNDetection:
     """SSN detection: dashed format required, alternatives should not fire."""
@@ -203,16 +222,19 @@ class TestSSNDetection:
         ssns = [f for f in findings if f.entity_type == EntityType.SSN]
         assert len(ssns) == 1
         f = ssns[0]
-        assert text[f.start:f.end] == "456-78-9012"
+        assert text[f.start : f.end] == "456-78-9012"
 
     @pytest.mark.asyncio
-    @pytest.mark.parametrize("text", [
-        "Number 123456789",          # No dashes
-        "Social 12-345-6789",        # Wrong grouping
-        "Social 1234-56-789",        # Wrong grouping
-        "Ref 123-456-789",           # 3-3-3, not 3-2-4
-        "Code 12-34-5678",           # 2-2-4
-    ])
+    @pytest.mark.parametrize(
+        "text",
+        [
+            "Number 123456789",  # No dashes
+            "Social 12-345-6789",  # Wrong grouping
+            "Social 1234-56-789",  # Wrong grouping
+            "Ref 123-456-789",  # 3-3-3, not 3-2-4
+            "Code 12-34-5678",  # 2-2-4
+        ],
+    )
     async def test_no_ssn_wrong_format(self, detector, text):
         findings = await detector.detect(text)
         ssns = [f for f in findings if f.entity_type == EntityType.SSN]
@@ -230,17 +252,21 @@ class TestSSNDetection:
 #  CREDIT CARD
 # ═══════════════════════════════════════════════════════════════
 
+
 class TestCreditCardDetection:
     """Credit card: Luhn validation, separator formats, invalid numbers."""
 
     @pytest.mark.asyncio
-    @pytest.mark.parametrize("text,card_number", [
-        ("Card: 4532015112830366",        "4532015112830366"),   # Visa compact
-        ("Card: 4532 0151 1283 0366",     "4532 0151 1283 0366"),# Visa spaced
-        ("Card: 4532-0151-1283-0366",     "4532-0151-1283-0366"),# Visa dashed
-        ("Card: 5425233430109903",        "5425233430109903"),   # Mastercard
-        ("Card: 6011111111111117",        "6011111111111117"),   # Discover
-    ])
+    @pytest.mark.parametrize(
+        "text,card_number",
+        [
+            ("Card: 4532015112830366", "4532015112830366"),  # Visa compact
+            ("Card: 4532 0151 1283 0366", "4532 0151 1283 0366"),  # Visa spaced
+            ("Card: 4532-0151-1283-0366", "4532-0151-1283-0366"),  # Visa dashed
+            ("Card: 5425233430109903", "5425233430109903"),  # Mastercard
+            ("Card: 6011111111111117", "6011111111111117"),  # Discover
+        ],
+    )
     async def test_detects_valid_card(self, detector, text, card_number):
         findings = await detector.detect(text)
         ccs = [f for f in findings if f.entity_type == EntityType.CREDIT_CARD]
@@ -270,12 +296,13 @@ class TestCreditCardDetection:
         ccs = [f for f in findings if f.entity_type == EntityType.CREDIT_CARD]
         assert len(ccs) == 1
         f = ccs[0]
-        assert text[f.start:f.end] == "4532015112830366"
+        assert text[f.start : f.end] == "4532015112830366"
 
 
 # ═══════════════════════════════════════════════════════════════
 #  AWS KEY
 # ═══════════════════════════════════════════════════════════════
+
 
 class TestAWSKeyDetection:
     """AWS access key: AKIA prefix + 16 uppercase alphanumeric."""
@@ -297,15 +324,18 @@ class TestAWSKeyDetection:
         aws = [f for f in findings if f.entity_type == EntityType.AWS_KEY]
         assert len(aws) == 1
         f = aws[0]
-        assert text[f.start:f.end] == "AKIAIOSFODNN7EXAMPLE"
+        assert text[f.start : f.end] == "AKIAIOSFODNN7EXAMPLE"
 
     @pytest.mark.asyncio
-    @pytest.mark.parametrize("text", [
-        "Key: ABIAIOSFODNN7EXAMPLE",     # Wrong prefix
-        "Key: AKIAiosfodnn7example",     # Lowercase (pattern needs [0-9A-Z])
-        "Key: AKIA123",                  # Too short after prefix
-        "we use AWS for hosting",        # AWS mention, no key
-    ])
+    @pytest.mark.parametrize(
+        "text",
+        [
+            "Key: ABIAIOSFODNN7EXAMPLE",  # Wrong prefix
+            "Key: AKIAiosfodnn7example",  # Lowercase (pattern needs [0-9A-Z])
+            "Key: AKIA123",  # Too short after prefix
+            "we use AWS for hosting",  # AWS mention, no key
+        ],
+    )
     async def test_no_aws_key_wrong_format(self, detector, text):
         findings = await detector.detect(text)
         aws = [f for f in findings if f.entity_type == EntityType.AWS_KEY]
@@ -315,6 +345,7 @@ class TestAWSKeyDetection:
 # ═══════════════════════════════════════════════════════════════
 #  GITHUB TOKEN
 # ═══════════════════════════════════════════════════════════════
+
 
 class TestGitHubTokenDetection:
     """GitHub token: ghp_ (36 chars) and github_pat_ (22+ chars) formats."""
@@ -346,7 +377,9 @@ class TestGitHubTokenDetection:
 
     @pytest.mark.asyncio
     async def test_no_github_token_wrong_prefix(self, detector):
-        findings = await detector.detect("Token: gha_ABCDEFGHIJKLMNOPQRSTUVWXYZ123456789")
+        findings = await detector.detect(
+            "Token: gha_ABCDEFGHIJKLMNOPQRSTUVWXYZ123456789"
+        )
         gh = [f for f in findings if f.entity_type == EntityType.GITHUB_TOKEN]
         assert len(gh) == 0
 
@@ -354,6 +387,7 @@ class TestGitHubTokenDetection:
 # ═══════════════════════════════════════════════════════════════
 #  JWT
 # ═══════════════════════════════════════════════════════════════
+
 
 class TestJWTDetection:
     """JWT detection: three-part dot-separated base64url tokens."""
@@ -392,6 +426,7 @@ class TestJWTDetection:
 #  MIXED ENTITIES & EDGE CASES
 # ═══════════════════════════════════════════════════════════════
 
+
 class TestMixedAndEdgeCases:
     """Multi-entity texts, empty input, and offset invariants."""
 
@@ -402,18 +437,12 @@ class TestMixedAndEdgeCases:
 
     @pytest.mark.asyncio
     async def test_plain_text_returns_no_findings(self, detector):
-        findings = await detector.detect(
-            "The quick brown fox jumps over the lazy dog."
-        )
+        findings = await detector.detect("The quick brown fox jumps over the lazy dog.")
         assert findings == []
 
     @pytest.mark.asyncio
     async def test_detects_all_three_pii_types_in_one_string(self, detector):
-        text = (
-            "Email: alice@example.com, "
-            "Phone: 555-867-5309, "
-            "SSN: 987-65-4321"
-        )
+        text = "Email: alice@example.com, Phone: 555-867-5309, SSN: 987-65-4321"
         findings = await detector.detect(text)
         types = {f.entity_type for f in findings}
         assert EntityType.EMAIL in types
@@ -422,9 +451,7 @@ class TestMixedAndEdgeCases:
 
     @pytest.mark.asyncio
     async def test_detects_mixed_pii_and_secret(self, detector):
-        text = (
-            "Contact dev@corp.com, key AKIAIOSFODNN7EXAMPLE"
-        )
+        text = "Contact dev@corp.com, key AKIAIOSFODNN7EXAMPLE"
         findings = await detector.detect(text)
         types = {f.entity_type for f in findings}
         assert EntityType.EMAIL in types
@@ -441,9 +468,9 @@ class TestMixedAndEdgeCases:
         findings = await detector.detect(text)
         assert len(findings) >= 4
         for f in findings:
-            assert text[f.start:f.end] == f.matched_text, (
+            assert text[f.start : f.end] == f.matched_text, (
                 f"Offset mismatch for {f.entity_type}: "
-                f"text[{f.start}:{f.end}]={text[f.start:f.end]!r} "
+                f"text[{f.start}:{f.end}]={text[f.start : f.end]!r} "
                 f"!= matched_text={f.matched_text!r}"
             )
 
@@ -468,11 +495,19 @@ class TestMixedAndEdgeCases:
         findings = await detector.detect(text)
         for f in findings:
             if f.entity_type in (
-                EntityType.EMAIL, EntityType.PHONE,
-                EntityType.SSN, EntityType.CREDIT_CARD,
+                EntityType.EMAIL,
+                EntityType.PHONE,
+                EntityType.SSN,
+                EntityType.CREDIT_CARD,
             ):
-                assert f.category == EntityCategory.PII, f"{f.entity_type} should be PII"
+                assert f.category == EntityCategory.PII, (
+                    f"{f.entity_type} should be PII"
+                )
             elif f.entity_type in (
-                EntityType.AWS_KEY, EntityType.GITHUB_TOKEN, EntityType.JWT,
+                EntityType.AWS_KEY,
+                EntityType.GITHUB_TOKEN,
+                EntityType.JWT,
             ):
-                assert f.category == EntityCategory.SECRET, f"{f.entity_type} should be SECRET"
+                assert f.category == EntityCategory.SECRET, (
+                    f"{f.entity_type} should be SECRET"
+                )

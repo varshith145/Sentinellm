@@ -9,10 +9,11 @@ reasons format, and policy metadata.
 import pytest
 
 from app.detectors.base import EntityCategory, EntityType, Finding
-from app.policy import PolicyDecision, PolicyEngine
+from app.policy import PolicyEngine
 
 
 # ── Helpers ────────────────────────────────────────────────────
+
 
 def _f(
     entity_type: EntityType,
@@ -22,9 +23,12 @@ def _f(
     """Shorthand to build a Finding for policy testing."""
     category = (
         EntityCategory.SECRET
-        if entity_type in (
-            EntityType.AWS_KEY, EntityType.GITHUB_TOKEN,
-            EntityType.JWT, EntityType.PASSWORD,
+        if entity_type
+        in (
+            EntityType.AWS_KEY,
+            EntityType.GITHUB_TOKEN,
+            EntityType.JWT,
+            EntityType.PASSWORD,
             EntityType.GENERIC_SECRET,
         )
         else EntityCategory.PII
@@ -121,6 +125,7 @@ output_scanning:
 #  BASIC DECISIONS
 # ═══════════════════════════════════════════════════════════════
 
+
 class TestBasicDecisions:
     """ALLOW / MASK / BLOCK fundamentals."""
 
@@ -163,17 +168,21 @@ class TestBasicDecisions:
 #  CONFIDENCE THRESHOLDS
 # ═══════════════════════════════════════════════════════════════
 
+
 class TestConfidenceThresholds:
     """Boundary conditions at/above/below every threshold in the policy."""
 
     # EMAIL threshold = 0.7
-    @pytest.mark.parametrize("conf,expected_action", [
-        (0.69, "ALLOW"),   # just below
-        (0.70, "MASK"),    # exactly at threshold
-        (0.71, "MASK"),    # just above
-        (0.30, "ALLOW"),   # well below
-        (1.00, "MASK"),    # maximum
-    ])
+    @pytest.mark.parametrize(
+        "conf,expected_action",
+        [
+            (0.69, "ALLOW"),  # just below
+            (0.70, "MASK"),  # exactly at threshold
+            (0.71, "MASK"),  # just above
+            (0.30, "ALLOW"),  # well below
+            (1.00, "MASK"),  # maximum
+        ],
+    )
     def test_email_confidence_boundary(self, engine, conf, expected_action):
         decision = engine.evaluate([_f(EntityType.EMAIL, confidence=conf)])
         assert decision.action == expected_action, (
@@ -181,62 +190,80 @@ class TestConfidenceThresholds:
         )
 
     # SSN threshold = 0.5 (lower than others — high risk)
-    @pytest.mark.parametrize("conf,expected_action", [
-        (0.49, "ALLOW"),
-        (0.50, "MASK"),
-        (0.51, "MASK"),
-    ])
+    @pytest.mark.parametrize(
+        "conf,expected_action",
+        [
+            (0.49, "ALLOW"),
+            (0.50, "MASK"),
+            (0.51, "MASK"),
+        ],
+    )
     def test_ssn_low_threshold(self, engine, conf, expected_action):
         decision = engine.evaluate([_f(EntityType.SSN, confidence=conf)])
         assert decision.action == expected_action
 
     # CREDIT_CARD threshold = 0.8
-    @pytest.mark.parametrize("conf,expected_action", [
-        (0.79, "ALLOW"),
-        (0.80, "MASK"),
-        (0.81, "MASK"),
-    ])
+    @pytest.mark.parametrize(
+        "conf,expected_action",
+        [
+            (0.79, "ALLOW"),
+            (0.80, "MASK"),
+            (0.81, "MASK"),
+        ],
+    )
     def test_credit_card_threshold(self, engine, conf, expected_action):
         decision = engine.evaluate([_f(EntityType.CREDIT_CARD, confidence=conf)])
         assert decision.action == expected_action
 
     # PERSON_NAME threshold = 0.85 (high — to avoid common name false positives)
-    @pytest.mark.parametrize("conf,expected_action", [
-        (0.84, "ALLOW"),
-        (0.85, "MASK"),
-        (0.90, "MASK"),
-    ])
+    @pytest.mark.parametrize(
+        "conf,expected_action",
+        [
+            (0.84, "ALLOW"),
+            (0.85, "MASK"),
+            (0.90, "MASK"),
+        ],
+    )
     def test_person_name_high_threshold(self, engine, conf, expected_action):
         decision = engine.evaluate([_f(EntityType.PERSON_NAME, confidence=conf)])
         assert decision.action == expected_action
 
     # AWS_KEY threshold = 0.5 (block at any reasonable confidence)
-    @pytest.mark.parametrize("conf,expected_action", [
-        (0.49, "ALLOW"),
-        (0.50, "BLOCK"),
-        (0.99, "BLOCK"),
-    ])
+    @pytest.mark.parametrize(
+        "conf,expected_action",
+        [
+            (0.49, "ALLOW"),
+            (0.50, "BLOCK"),
+            (0.99, "BLOCK"),
+        ],
+    )
     def test_aws_key_threshold(self, engine, conf, expected_action):
         decision = engine.evaluate([_f(EntityType.AWS_KEY, confidence=conf)])
         assert decision.action == expected_action
 
     # PASSWORD threshold = 0.6
-    @pytest.mark.parametrize("conf,expected_action", [
-        (0.59, "ALLOW"),
-        (0.60, "BLOCK"),
-        (0.61, "BLOCK"),
-    ])
+    @pytest.mark.parametrize(
+        "conf,expected_action",
+        [
+            (0.59, "ALLOW"),
+            (0.60, "BLOCK"),
+            (0.61, "BLOCK"),
+        ],
+    )
     def test_password_threshold(self, engine, conf, expected_action):
         decision = engine.evaluate([_f(EntityType.PASSWORD, confidence=conf)])
         assert decision.action == expected_action
 
     # GENERIC_SECRET threshold = 0.90 (very high — calibrated to filter uncertain detections)
-    @pytest.mark.parametrize("conf,expected_action", [
-        (0.85, "ALLOW"),   # AWS false-positive zone — below threshold
-        (0.89, "ALLOW"),   # Still below
-        (0.90, "BLOCK"),   # Exactly at threshold
-        (1.00, "BLOCK"),   # Genuine secret (model gives ~1.00)
-    ])
+    @pytest.mark.parametrize(
+        "conf,expected_action",
+        [
+            (0.85, "ALLOW"),  # AWS false-positive zone — below threshold
+            (0.89, "ALLOW"),  # Still below
+            (0.90, "BLOCK"),  # Exactly at threshold
+            (1.00, "BLOCK"),  # Genuine secret (model gives ~1.00)
+        ],
+    )
     def test_generic_secret_high_threshold(self, engine, conf, expected_action):
         decision = engine.evaluate([_f(EntityType.GENERIC_SECRET, confidence=conf)])
         assert decision.action == expected_action, (
@@ -244,10 +271,13 @@ class TestConfidenceThresholds:
         )
 
     # JWT threshold = 0.7
-    @pytest.mark.parametrize("conf,expected_action", [
-        (0.69, "ALLOW"),
-        (0.70, "BLOCK"),
-    ])
+    @pytest.mark.parametrize(
+        "conf,expected_action",
+        [
+            (0.69, "ALLOW"),
+            (0.70, "BLOCK"),
+        ],
+    )
     def test_jwt_threshold(self, engine, conf, expected_action):
         decision = engine.evaluate([_f(EntityType.JWT, confidence=conf)])
         assert decision.action == expected_action
@@ -257,21 +287,25 @@ class TestConfidenceThresholds:
 #  ALL ENTITY TYPES
 # ═══════════════════════════════════════════════════════════════
 
+
 class TestAllEntityTypes:
     """Every entity type in the policy must trigger its configured action."""
 
-    @pytest.mark.parametrize("entity_type,expected_action", [
-        (EntityType.EMAIL,          "MASK"),
-        (EntityType.PHONE,          "MASK"),
-        (EntityType.SSN,            "MASK"),
-        (EntityType.CREDIT_CARD,    "MASK"),
-        (EntityType.PERSON_NAME,    "MASK"),
-        (EntityType.GENERIC_PII,    "MASK"),
-        (EntityType.AWS_KEY,        "BLOCK"),
-        (EntityType.GITHUB_TOKEN,   "BLOCK"),
-        (EntityType.JWT,            "BLOCK"),
-        (EntityType.PASSWORD,       "BLOCK"),
-    ])
+    @pytest.mark.parametrize(
+        "entity_type,expected_action",
+        [
+            (EntityType.EMAIL, "MASK"),
+            (EntityType.PHONE, "MASK"),
+            (EntityType.SSN, "MASK"),
+            (EntityType.CREDIT_CARD, "MASK"),
+            (EntityType.PERSON_NAME, "MASK"),
+            (EntityType.GENERIC_PII, "MASK"),
+            (EntityType.AWS_KEY, "BLOCK"),
+            (EntityType.GITHUB_TOKEN, "BLOCK"),
+            (EntityType.JWT, "BLOCK"),
+            (EntityType.PASSWORD, "BLOCK"),
+        ],
+    )
     def test_entity_type_action(self, engine, entity_type, expected_action):
         """Each entity type fires its configured action at high confidence."""
         decision = engine.evaluate([_f(entity_type, confidence=0.99)])
@@ -283,6 +317,7 @@ class TestAllEntityTypes:
 # ═══════════════════════════════════════════════════════════════
 #  OUTPUT SCANNING
 # ═══════════════════════════════════════════════════════════════
+
 
 class TestOutputScanning:
     """In output mode, BLOCK → MASK; MASK stays MASK; ALLOW stays ALLOW."""
@@ -317,6 +352,7 @@ class TestOutputScanning:
 #  UNKNOWN ENTITY TYPES & DEFAULT ACTION
 # ═══════════════════════════════════════════════════════════════
 
+
 class TestUnknownEntityAndDefaults:
     """Entity types with no rule use default_action; policy metadata is correct."""
 
@@ -344,6 +380,7 @@ class TestUnknownEntityAndDefaults:
 # ═══════════════════════════════════════════════════════════════
 #  REASONS FORMAT
 # ═══════════════════════════════════════════════════════════════
+
 
 class TestReasonsFormat:
     """Reasons must include entity type, action, confidence, and detector."""

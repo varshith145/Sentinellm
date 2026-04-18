@@ -12,7 +12,6 @@ from presidio_analyzer import AnalyzerEngine
 
 from app.detectors.base import (
     BaseDetector,
-    EntityCategory,
     EntityType,
     Finding,
     ENTITY_CATEGORY_MAP,

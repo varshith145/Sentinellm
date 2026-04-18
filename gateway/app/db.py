@@ -22,6 +22,7 @@ from app.config import settings
 
 class Base(DeclarativeBase):
     """SQLAlchemy declarative base."""
+
     pass
 
 
@@ -31,6 +32,7 @@ class AuditLog(Base):
 
     Stores only redacted content — never raw PII or secrets.
     """
+
     __tablename__ = "audit_log"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -43,7 +45,7 @@ class AuditLog(Base):
     user_id = Column(Text, nullable=False, default="anonymous")
     model = Column(Text, nullable=False)
     input_decision = Column(String(10), nullable=False)  # ALLOW, MASK, BLOCK
-    output_decision = Column(String(10), nullable=True)   # ALLOW, MASK, or null
+    output_decision = Column(String(10), nullable=True)  # ALLOW, MASK, or null
     policy_id = Column(Text, nullable=False)
     reasons = Column(JSONB, nullable=False, default=list)
     input_redactions = Column(JSONB, nullable=False, default=dict)
