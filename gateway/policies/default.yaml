@@ -57,7 +57,7 @@ rules:
   - entity_type: GENERIC_SECRET
     category: SECRET
     action: BLOCK
-    min_confidence: 0.6
+    min_confidence: 0.90  # calibrated: genuine secrets score ~1.00, uncertain cases (e.g. cloud service names) score ~0.85
 
 # Default action for entity types not listed above
 default_action: ALLOW

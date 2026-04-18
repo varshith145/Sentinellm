@@ -95,3 +95,434 @@
 {"text": "kubernetes secret contains base64 encoded credentials for the cluster admin", "entities": [{"start": 11, "end": 75, "label": "SECRET"}]}
 {"text": "beneficiary social security is seven eight nine dash oh one dash two three four five", "entities": [{"start": 30, "end": 84, "label": "PII"}]}
 {"text": "sendgrid api key ess gee dot something something something", "entities": [{"start": 17, "end": 58, "label": "SECRET"}]}
+{"text": "bill the card starting with two two one six", "entities": [{"start": 28, "end": 43, "label": "PII"}]}
+{"text": "the best way to reach me is ring me at three zero three two nine nine seven two nine one", "entities": [{"start": 39, "end": 88, "label": "PII"}]}
+{"text": "drop me a line at zoe dash allen at dev dot net", "entities": [{"start": 18, "end": 47, "label": "PII"}]}
+{"text": "add this to your env file: the bearer token is equals xoxb-1234ZucCkJYybQkn", "entities": [{"start": 54, "end": 75, "label": "SECRET"}]}
+{"text": "i set the password to access99 for now", "entities": [{"start": 22, "end": 30, "label": "SECRET"}]}
+{"text": "the best way to reach me is text me at six one seven seven nine one four five zero one", "entities": [{"start": 39, "end": 86, "label": "PII"}]}
+{"text": "the credential is princess1 do not share this", "entities": [{"start": 18, "end": 27, "label": "SECRET"}]}
+{"text": "the address zoe dot jackson at outlook dot edu was added to the system", "entities": [{"start": 12, "end": 46, "label": "PII"}]}
+{"text": "email me at omar underscore brown at io dot co", "entities": [{"start": 12, "end": 46, "label": "PII"}]}
+{"text": "reach me at jane underscore jones at startup dot io", "entities": [{"start": 12, "end": 51, "label": "PII"}]}
+{"text": "the api key starts with ex oh ex bee dash and then more characters", "entities": [{"start": 24, "end": 41, "label": "SECRET"}]}
+{"text": "the root password is trustno1 change it after first login", "entities": [{"start": 21, "end": 29, "label": "SECRET"}]}
+{"text": "use dragon7 to log in to the staging server", "entities": [{"start": 4, "end": 11, "label": "SECRET"}]}
+{"text": "the access token is sk-projwPAh03aiOu37qTxv", "entities": [{"start": 20, "end": 43, "label": "SECRET"}]}
+{"text": "my credit card is zero eight zero eight you have the rest on file", "entities": [{"start": 18, "end": 39, "label": "PII"}]}
+{"text": "login with username admin and password password123", "entities": [{"start": 39, "end": 50, "label": "SECRET"}]}
+{"text": "the form requires my tax id is nine eight four dash one eight dash five five two six to process the application", "entities": [{"start": 31, "end": 84, "label": "PII"}]}
+{"text": "login with username admin and password mustang5", "entities": [{"start": 39, "end": 47, "label": "SECRET"}]}
+{"text": "my api key is baseball7", "entities": [{"start": 14, "end": 23, "label": "SECRET"}]}
+{"text": "the key starts with pk_liveQhT66y97cL57nJ6iUo8k2fR followed by random characters", "entities": [{"start": 20, "end": 50, "label": "SECRET"}]}
+{"text": "contact me at mike dot allen at corp dot com", "entities": [{"start": 14, "end": 44, "label": "PII"}]}
+{"text": "i set the password to abc123xyz for now", "entities": [{"start": 22, "end": 31, "label": "SECRET"}]}
+{"text": "the passphrase is the city where my parents met", "entities": [{"start": 0, "end": 47, "label": "SECRET"}]}
+{"text": "my details are wei at dev dot org for any follow up", "entities": [{"start": 15, "end": 33, "label": "PII"}]}
+{"text": "for security questions i always use my first pets name", "entities": [{"start": 0, "end": 54, "label": "SECRET"}]}
+{"text": "login with username admin and password starwars9", "entities": [{"start": 39, "end": 48, "label": "SECRET"}]}
+{"text": "the address omar dot jackson at gmail dot com was added to the system", "entities": [{"start": 12, "end": 45, "label": "PII"}]}
+{"text": "my details are zoe at co dot edu for any follow up", "entities": [{"start": 15, "end": 32, "label": "PII"}]}
+{"text": "the best way to reach me is my cell is six one seven six six six nine six nine eight", "entities": [{"start": 39, "end": 84, "label": "PII"}]}
+{"text": "write to me at liam dot jones at hotmail dot io", "entities": [{"start": 15, "end": 47, "label": "PII"}]}
+{"text": "ring me at three one two two eight zero nine four eight six", "entities": [{"start": 11, "end": 59, "label": "PII"}]}
+{"text": "send it to liam dash walker at enterprise dot com", "entities": [{"start": 11, "end": 49, "label": "PII"}]}
+{"text": "bill the card starting with one eight two six", "entities": [{"start": 28, "end": 45, "label": "PII"}]}
+{"text": "the auth token is AKIAOSWe9DyF5QHXw3HN", "entities": [{"start": 18, "end": 38, "label": "SECRET"}]}
+{"text": "temporary password for your account is starwars9", "entities": [{"start": 39, "end": 48, "label": "SECRET"}]}
+{"text": "my credit card is four seven two two you have the rest on file", "entities": [{"start": 18, "end": 36, "label": "PII"}]}
+{"text": "my SSN is two zero two dash three four dash five eight five three please keep this confidential", "entities": [{"start": 10, "end": 65, "label": "PII"}]}
+{"text": "drop me a line at emily at enterprise dot org", "entities": [{"start": 18, "end": 45, "label": "PII"}]}
+{"text": "the last four of my social are nine three three dash eight zero dash one six zero one", "entities": [{"start": 31, "end": 85, "label": "PII"}]}
+{"text": "the default credential is iloveyou2 until you reset it", "entities": [{"start": 26, "end": 35, "label": "SECRET"}]}
+{"text": "the secret key is ghp_abchLdPOkaiaEvGYqxU2T", "entities": [{"start": 18, "end": 43, "label": "SECRET"}]}
+{"text": "the api key starts with gee aych pee underscore and then more characters", "entities": [{"start": 24, "end": 47, "label": "SECRET"}]}
+{"text": "for verification purposes my SSN is six nine zero dash nine zero dash one eight seven eight", "entities": [{"start": 36, "end": 91, "label": "PII"}]}
+{"text": "my cell is three one two three seven eight six five zero two", "entities": [{"start": 11, "end": 60, "label": "PII"}]}
+{"text": "my social is five one eight dash six seven dash eight six nine nine", "entities": [{"start": 13, "end": 67, "label": "PII"}]}
+{"text": "login with username admin and password y08p0fodro8bn", "entities": [{"start": 39, "end": 52, "label": "SECRET"}]}
+{"text": "the api key starts with ay kay eye ay and then more characters", "entities": [{"start": 24, "end": 37, "label": "SECRET"}]}
+{"text": "send it to carlos underscore martinez at work dot net", "entities": [{"start": 11, "end": 53, "label": "PII"}]}
+{"text": "my credit card is nine three three one you have the rest on file", "entities": [{"start": 18, "end": 38, "label": "PII"}]}
+{"text": "my details are daniel at enterprise dot co for any follow up", "entities": [{"start": 15, "end": 42, "label": "PII"}]}
+{"text": "authorization header should be Bearer pk_live2cMpszIdrim2GNXX9Ww", "entities": [{"start": 38, "end": 64, "label": "SECRET"}]}
+{"text": "my address is alex dash garcia at company dot edu", "entities": [{"start": 14, "end": 49, "label": "PII"}]}
+{"text": "my social is two nine six dash three seven dash eight nine three three please keep this confidential", "entities": [{"start": 13, "end": 70, "label": "PII"}]}
+{"text": "the best way to reach me is my number is two zero six nine four two nine zero three one", "entities": [{"start": 41, "end": 87, "label": "PII"}]}
+{"text": "drop me a line at alex dot harris at io dot com", "entities": [{"start": 18, "end": 47, "label": "PII"}]}
+{"text": "feel free to reach me on three one two five three zero seven two one one if you have questions", "entities": [{"start": 25, "end": 72, "label": "PII"}]}
+{"text": "write to me at wei at yahoo dot org", "entities": [{"start": 15, "end": 35, "label": "PII"}]}
+{"text": "the root password is hunter2 change it after first login", "entities": [{"start": 21, "end": 28, "label": "SECRET"}]}
+{"text": "get in touch at olivia at tech dot net", "entities": [{"start": 16, "end": 38, "label": "PII"}]}
+{"text": "the credential is trustno1", "entities": [{"start": 18, "end": 26, "label": "SECRET"}]}
+{"text": "the api key starts with ess kay dash and then more characters", "entities": [{"start": 24, "end": 36, "label": "SECRET"}]}
+{"text": "the address nina dot hall at gmail dot edu was added to the system", "entities": [{"start": 12, "end": 42, "label": "PII"}]}
+{"text": "export API_KEY equals sk-projvh1RDofXgwsxY2NPeILkvnU", "entities": [{"start": 22, "end": 52, "label": "SECRET"}]}
+{"text": "send it to lisa dot smith at yahoo dot edu", "entities": [{"start": 11, "end": 42, "label": "PII"}]}
+{"text": "the form requires for verification my SSN is nine eight five dash seven five dash one zero one eight to process the application", "entities": [{"start": 45, "end": 100, "label": "PII"}]}
+{"text": "my card number starts with six five eight zero and ends with the last four i gave you", "entities": [{"start": 27, "end": 46, "label": "PII"}]}
+{"text": "my private key is princess1 do not share this", "entities": [{"start": 18, "end": 27, "label": "SECRET"}]}
+{"text": "my password hint is my favorite team and the year they won", "entities": [{"start": 0, "end": 58, "label": "SECRET"}]}
+{"text": "the token resets every hour and i store it in my password manager", "entities": [{"start": 0, "end": 65, "label": "SECRET"}]}
+{"text": "temporary password for your account is mustang5", "entities": [{"start": 39, "end": 47, "label": "SECRET"}]}
+{"text": "the wifi password is the street we grew up on plus the house number", "entities": [{"start": 0, "end": 67, "label": "SECRET"}]}
+{"text": "contact me at sophia dot rodriguez at co dot edu", "entities": [{"start": 14, "end": 48, "label": "PII"}]}
+{"text": "bill the card starting with eight five one five", "entities": [{"start": 28, "end": 47, "label": "PII"}]}
+{"text": "login with username admin and password letmein", "entities": [{"start": 39, "end": 46, "label": "SECRET"}]}
+{"text": "for verification purposes my SSN is five three five dash two four dash nine nine two two", "entities": [{"start": 36, "end": 88, "label": "PII"}]}
+{"text": "feel free to text me at six one seven seven eight three nine seven zero two if you have questions", "entities": [{"start": 24, "end": 75, "label": "PII"}]}
+{"text": "temporary password for your account is monkey99", "entities": [{"start": 39, "end": 47, "label": "SECRET"}]}
+{"text": "add this to your env file: the secret key is equals token xyz789IuACXNlOyT2BAa", "entities": [{"start": 52, "end": 78, "label": "SECRET"}]}
+{"text": "login with username admin and password starwars9", "entities": [{"start": 39, "end": 48, "label": "SECRET"}]}
+{"text": "bill the card starting with seven nine nine six", "entities": [{"start": 28, "end": 47, "label": "PII"}]}
+{"text": "the key starts with pk_lives0D1K6e3F1xsd0imzJ4Ct followed by random characters", "entities": [{"start": 20, "end": 48, "label": "SECRET"}]}
+{"text": "the access token is ghp_abcu9tdCmVJjWWiAAADaHT", "entities": [{"start": 20, "end": 46, "label": "SECRET"}]}
+{"text": "the last four of my social are two one six dash one eight dash seven five six five", "entities": [{"start": 31, "end": 82, "label": "PII"}]}
+{"text": "please reach out to sarah dot white at corp dot org at your earliest convenience", "entities": [{"start": 20, "end": 51, "label": "PII"}]}
+{"text": "my direct line is four one five nine zero six two seven seven one", "entities": [{"start": 18, "end": 65, "label": "PII"}]}
+{"text": "my card number starts with three seven three five and ends with the last four i gave you", "entities": [{"start": 27, "end": 49, "label": "PII"}]}
+{"text": "the best way to reach me is my direct line is six one seven three two four five four seven one", "entities": [{"start": 46, "end": 94, "label": "PII"}]}
+{"text": "feel free to you can call me at three one two five one four four nine eight six if you have questions", "entities": [{"start": 32, "end": 79, "label": "PII"}]}
+{"text": "i set the password to mustang5 for now", "entities": [{"start": 22, "end": 30, "label": "SECRET"}]}
+{"text": "the key starts with rk_livewl64zoTiTKkwOc2pHd9 followed by random characters", "entities": [{"start": 20, "end": 46, "label": "SECRET"}]}
+{"text": "my mobile is two zero six six five one nine nine four seven anytime after nine am", "entities": [{"start": 13, "end": 59, "label": "PII"}]}
+{"text": "add this to your env file: the secret key is equals rk_livefpwFPq9bzCUpCX", "entities": [{"start": 52, "end": 73, "label": "SECRET"}]}
+{"text": "i use my childhood nickname as the passphrase it has uppercase and numbers", "entities": [{"start": 0, "end": 74, "label": "SECRET"}]}
+{"text": "for verification purposes my social security number is nine three zero dash eight two dash five nine seven eight", "entities": [{"start": 55, "end": 112, "label": "PII"}]}
+{"text": "write to me at emily dash martinez at enterprise dot io", "entities": [{"start": 15, "end": 55, "label": "PII"}]}
+{"text": "get in touch at kevin at co dot org", "entities": [{"start": 16, "end": 35, "label": "PII"}]}
+{"text": "the best way to reach me is you can call me at six one seven one zero six six seven six three", "entities": [{"start": 47, "end": 93, "label": "PII"}]}
+{"text": "my card number starts with three four seven two and ends with the last four i gave you", "entities": [{"start": 27, "end": 47, "label": "PII"}]}
+{"text": "contact is wei at yahoo dot com", "entities": [{"start": 11, "end": 31, "label": "PII"}]}
+{"text": "the key starts with AKIA3ihTvAXpNpLSr followed by random characters", "entities": [{"start": 20, "end": 37, "label": "SECRET"}]}
+{"text": "my credit card is five five zero three you have the rest on file", "entities": [{"start": 18, "end": 38, "label": "PII"}]}
+{"text": "drop me a line at lisa at startup dot com", "entities": [{"start": 18, "end": 41, "label": "PII"}]}
+{"text": "the form requires my social is eight six three dash eight zero dash six four one nine to process the application", "entities": [{"start": 31, "end": 85, "label": "PII"}]}
+{"text": "reach me at tyler underscore hall at hotmail dot io", "entities": [{"start": 12, "end": 51, "label": "PII"}]}
+{"text": "use admin123 to log in to the staging server", "entities": [{"start": 4, "end": 12, "label": "SECRET"}]}
+{"text": "the default credential is master42 until you reset it", "entities": [{"start": 26, "end": 34, "label": "SECRET"}]}
+{"text": "contact is sarah at corp dot net", "entities": [{"start": 11, "end": 32, "label": "PII"}]}
+{"text": "temporary password for your account is letmein", "entities": [{"start": 39, "end": 46, "label": "SECRET"}]}
+{"text": "the root password is abc123xyz change it after first login", "entities": [{"start": 21, "end": 30, "label": "SECRET"}]}
+{"text": "please reach out to chris dot wright at tech dot net at your earliest convenience", "entities": [{"start": 20, "end": 52, "label": "PII"}]}
+{"text": "the address mike dot hall at company dot edu was added to the system", "entities": [{"start": 12, "end": 44, "label": "PII"}]}
+{"text": "please reach out to david dot green at startup dot co at your earliest convenience", "entities": [{"start": 20, "end": 53, "label": "PII"}]}
+{"text": "the answer to secret question is my elementary school name", "entities": [{"start": 0, "end": 58, "label": "SECRET"}]}
+{"text": "the root password is admin123 change it after first login", "entities": [{"start": 21, "end": 29, "label": "SECRET"}]}
+{"text": "my details are sarah at co dot net for any follow up", "entities": [{"start": 15, "end": 34, "label": "PII"}]}
+{"text": "the master password follows the pattern name plus birthday", "entities": [{"start": 0, "end": 58, "label": "SECRET"}]}
+{"text": "i set the recovery phrase to something only i would know from childhood", "entities": [{"start": 0, "end": 71, "label": "SECRET"}]}
+{"text": "the api key is rk_liveAGq8MEFd1kjV3PhTa1acw5l7", "entities": [{"start": 15, "end": 46, "label": "SECRET"}]}
+{"text": "the api key starts with pee kay underscore live underscore and then more characters", "entities": [{"start": 24, "end": 58, "label": "SECRET"}]}
+{"text": "add this to your env file: the api key is equals pk_liveGFUsd37EgEKG895", "entities": [{"start": 49, "end": 71, "label": "SECRET"}]}
+{"text": "i use my childhood nickname as the passphrase it has uppercase and numbers", "entities": [{"start": 0, "end": 74, "label": "SECRET"}]}
+{"text": "the root password is mustang5 change it after first login", "entities": [{"start": 21, "end": 29, "label": "SECRET"}]}
+{"text": "for verification my SSN is seven six three dash two nine dash nine one six five please keep this confidential", "entities": [{"start": 27, "end": 79, "label": "PII"}]}
+{"text": "reach me on four one five nine eight seven eight five six four", "entities": [{"start": 12, "end": 62, "label": "PII"}]}
+{"text": "temporary password for your account is football9", "entities": [{"start": 39, "end": 48, "label": "SECRET"}]}
+{"text": "my credit card is five eight nine nine you have the rest on file", "entities": [{"start": 18, "end": 38, "label": "PII"}]}
+{"text": "the api key starts with ay kay eye ay and then more characters", "entities": [{"start": 24, "end": 37, "label": "SECRET"}]}
+{"text": "feel free to phone me at five five five six three two nine eight two one if you have questions", "entities": [{"start": 25, "end": 72, "label": "PII"}]}
+{"text": "my credit card is nine five eight six you have the rest on file", "entities": [{"start": 18, "end": 37, "label": "PII"}]}
+{"text": "my address is james underscore rodriguez at tech dot net", "entities": [{"start": 14, "end": 56, "label": "PII"}]}
+{"text": "send it to wei underscore hall at co dot io", "entities": [{"start": 11, "end": 43, "label": "PII"}]}
+{"text": "you can call me at two zero six four three four seven five nine two anytime after nine am", "entities": [{"start": 19, "end": 67, "label": "PII"}]}
+{"text": "the best way to reach me is my number is three zero three six seven seven one four four four", "entities": [{"start": 41, "end": 92, "label": "PII"}]}
+{"text": "reach me at priya at co dot co", "entities": [{"start": 12, "end": 30, "label": "PII"}]}
+{"text": "the form requires for verification my SSN is three eight four dash three three dash eight one four one to process the application", "entities": [{"start": 45, "end": 102, "label": "PII"}]}
+{"text": "the security pin is based on my wifes birthday backwards", "entities": [{"start": 0, "end": 56, "label": "SECRET"}]}
+{"text": "authorization header should be Bearer xoxb-123sf0tyEOfHl2wBqCoqdUPfv", "entities": [{"start": 38, "end": 68, "label": "SECRET"}]}
+{"text": "my social security number is five four eight dash nine nine dash eight nine four one", "entities": [{"start": 29, "end": 84, "label": "PII"}]}
+{"text": "the form requires the last four of my social are eight nine four dash seven six dash seven two three two to process the application", "entities": [{"start": 49, "end": 104, "label": "PII"}]}
+{"text": "reach me at liam dash nelson at io dot net", "entities": [{"start": 12, "end": 42, "label": "PII"}]}
+{"text": "the default credential is princess1 until you reset it", "entities": [{"start": 26, "end": 35, "label": "SECRET"}]}
+{"text": "contact is john at dev dot net", "entities": [{"start": 11, "end": 30, "label": "PII"}]}
+{"text": "write to me at james at co dot com", "entities": [{"start": 15, "end": 34, "label": "PII"}]}
+{"text": "my SSN is three seven seven dash four nine dash five one one eight", "entities": [{"start": 10, "end": 66, "label": "PII"}]}
+{"text": "for verification purposes my social security number is eight three eight dash three four dash six one six nine", "entities": [{"start": 55, "end": 110, "label": "PII"}]}
+{"text": "my tax id is seven three seven dash seven three dash eight two four two", "entities": [{"start": 13, "end": 71, "label": "PII"}]}
+{"text": "my card number starts with four six zero eight and ends with the last four i gave you", "entities": [{"start": 27, "end": 46, "label": "PII"}]}
+{"text": "the form requires my tax id is six two one dash four four dash seven eight zero seven to process the application", "entities": [{"start": 31, "end": 85, "label": "PII"}]}
+{"text": "the api key starts with aych tee tee pee ess colon slash slash and then more characters", "entities": [{"start": 24, "end": 62, "label": "SECRET"}]}
+{"text": "the key starts with sk-projZ8iZxNNKqYbd followed by random characters", "entities": [{"start": 20, "end": 39, "label": "SECRET"}]}
+{"text": "my number is two zero six eight three two four two four nine anytime after nine am", "entities": [{"start": 13, "end": 60, "label": "PII"}]}
+{"text": "the best way to reach me is you can call me at two one two six nine two one four two zero", "entities": [{"start": 47, "end": 89, "label": "PII"}]}
+{"text": "the api key starts with pee kay underscore live underscore and then more characters", "entities": [{"start": 24, "end": 58, "label": "SECRET"}]}
+{"text": "export API_KEY equals xoxb-123fwfPOdMTUAffneKG", "entities": [{"start": 22, "end": 46, "label": "SECRET"}]}
+{"text": "feel free to text me at two one two eight three seven five nine two zero if you have questions", "entities": [{"start": 24, "end": 72, "label": "PII"}]}
+{"text": "hit me up at rachel dash allen at yahoo dot com", "entities": [{"start": 13, "end": 47, "label": "PII"}]}
+{"text": "use access99 to log in to the staging server", "entities": [{"start": 4, "end": 12, "label": "SECRET"}]}
+{"text": "the best way to reach me is my cell is three zero three nine zero one one six seven two", "entities": [{"start": 39, "end": 87, "label": "PII"}]}
+{"text": "the form requires the last four of my social are six nine zero dash one five dash three eight seven zero to process the application", "entities": [{"start": 49, "end": 104, "label": "PII"}]}
+{"text": "phone me at five five five seven three six three four nine six anytime after nine am", "entities": [{"start": 12, "end": 62, "label": "PII"}]}
+{"text": "the address mike dot martinez at tech dot co was added to the system", "entities": [{"start": 12, "end": 44, "label": "PII"}]}
+{"text": "contact is mike at co dot org", "entities": [{"start": 11, "end": 29, "label": "PII"}]}
+{"text": "my cell is six one seven five four six five three nine seven anytime after nine am", "entities": [{"start": 11, "end": 60, "label": "PII"}]}
+{"text": "for verification purposes for verification my SSN is seven four five dash eight seven dash four nine two zero", "entities": [{"start": 53, "end": 109, "label": "PII"}]}
+{"text": "authorization header should be Bearer rk_live8ffiYeJA7oqtXRTtqem", "entities": [{"start": 38, "end": 64, "label": "SECRET"}]}
+{"text": "add this to your env file: my api key is equals AKIA2bq1f1hYnTQ1LAMW", "entities": [{"start": 48, "end": 68, "label": "SECRET"}]}
+{"text": "my private key is sunshine3 do not share this", "entities": [{"start": 18, "end": 27, "label": "SECRET"}]}
+{"text": "for verification purposes my social is one seven two dash nine seven dash four eight two four", "entities": [{"start": 39, "end": 93, "label": "PII"}]}
+{"text": "bill the card starting with five eight three two", "entities": [{"start": 28, "end": 48, "label": "PII"}]}
+{"text": "charge the card that ends in eight three eight six", "entities": [{"start": 29, "end": 50, "label": "PII"}]}
+{"text": "my social security number is eight one four dash two six dash nine zero four two", "entities": [{"start": 29, "end": 80, "label": "PII"}]}
+{"text": "login with username admin and password welcome1", "entities": [{"start": 39, "end": 47, "label": "SECRET"}]}
+{"text": "for verification purposes my SSN is three seven zero dash nine four dash two three three zero", "entities": [{"start": 36, "end": 93, "label": "PII"}]}
+{"text": "temporary password for your account is iloveyou2", "entities": [{"start": 39, "end": 48, "label": "SECRET"}]}
+{"text": "the default credential is mustang5 until you reset it", "entities": [{"start": 26, "end": 34, "label": "SECRET"}]}
+{"text": "for verification purposes for verification my SSN is four nine two dash three four dash nine three two seven", "entities": [{"start": 53, "end": 108, "label": "PII"}]}
+{"text": "login with username admin and password qwerty", "entities": [{"start": 39, "end": 45, "label": "SECRET"}]}
+{"text": "the key starts with eyJhbGcqx0XOXhRd6jzKXQlxwb followed by random characters", "entities": [{"start": 20, "end": 46, "label": "SECRET"}]}
+{"text": "hit me up at lisa at hotmail dot edu", "entities": [{"start": 13, "end": 36, "label": "PII"}]}
+{"text": "contact me at lisa dash adams at enterprise dot io", "entities": [{"start": 14, "end": 50, "label": "PII"}]}
+{"text": "for verification purposes my social security number is seven one eight dash four two dash one four two three", "entities": [{"start": 55, "end": 108, "label": "PII"}]}
+{"text": "feel free to you can call me at two zero six six six one one zero zero six if you have questions", "entities": [{"start": 32, "end": 74, "label": "PII"}]}
+{"text": "my cell is six one seven eight one six five one nine eight anytime after nine am", "entities": [{"start": 11, "end": 58, "label": "PII"}]}
+{"text": "charge the card that ends in five seven one one", "entities": [{"start": 29, "end": 47, "label": "PII"}]}
+{"text": "my details are emma at enterprise dot co for any follow up", "entities": [{"start": 15, "end": 40, "label": "PII"}]}
+{"text": "the api key starts with bee ee ay ar ee ar space and then more characters", "entities": [{"start": 24, "end": 48, "label": "SECRET"}]}
+{"text": "please reach out to sophia dot scott at dev dot co at your earliest convenience", "entities": [{"start": 20, "end": 50, "label": "PII"}]}
+{"text": "my credit card is six zero nine one you have the rest on file", "entities": [{"start": 18, "end": 35, "label": "PII"}]}
+{"text": "export API_KEY equals AKIAPkLINO7uXggnUIQnxCQQj9", "entities": [{"start": 22, "end": 48, "label": "SECRET"}]}
+{"text": "the address ryan dot lee at gmail dot com was added to the system", "entities": [{"start": 12, "end": 41, "label": "PII"}]}
+{"text": "the the auth token is is Bearer abc123ZqzOlnZTV1YFjtFi02blZZpC rotate it weekly", "entities": [{"start": 25, "end": 62, "label": "SECRET"}]}
+{"text": "write to me at priya at corp dot co", "entities": [{"start": 15, "end": 35, "label": "PII"}]}
+{"text": "the best way to reach me is reach me on four zero four seven five zero eight five three two", "entities": [{"start": 40, "end": 91, "label": "PII"}]}
+{"text": "the last four of my social are one nine five dash three eight dash two eight five eight", "entities": [{"start": 31, "end": 87, "label": "PII"}]}
+{"text": "the form requires my social is four three seven dash six two dash nine one one seven to process the application", "entities": [{"start": 31, "end": 84, "label": "PII"}]}
+{"text": "the api key starts with ess kay dash and then more characters", "entities": [{"start": 24, "end": 36, "label": "SECRET"}]}
+{"text": "the best way to reach me is phone me at two one two three eight five eight three eight five", "entities": [{"start": 40, "end": 91, "label": "PII"}]}
+{"text": "authorization header should be Bearer AKIAGod1YztibEs4zT", "entities": [{"start": 38, "end": 56, "label": "SECRET"}]}
+{"text": "the best way to reach me is my number is two zero six seven two zero nine three seven nine", "entities": [{"start": 41, "end": 90, "label": "PII"}]}
+{"text": "the form requires my social security number is four two two dash four two dash six two nine six to process the application", "entities": [{"start": 47, "end": 95, "label": "PII"}]}
+{"text": "the secret key is mustang5", "entities": [{"start": 18, "end": 26, "label": "SECRET"}]}
+{"text": "add this to your env file: the access token is equals ghp_abc17x6ygsij6X7Ok8R5WnK", "entities": [{"start": 54, "end": 81, "label": "SECRET"}]}
+{"text": "call me at three one two two five zero one four zero zero anytime after nine am", "entities": [{"start": 11, "end": 57, "label": "PII"}]}
+{"text": "my password hint is my favorite team and the year they won", "entities": [{"start": 0, "end": 58, "label": "SECRET"}]}
+{"text": "my SSN is two seven seven dash eight zero dash two two two nine", "entities": [{"start": 10, "end": 63, "label": "PII"}]}
+{"text": "add this to your env file: the secret key is equals pk_liveRXJXHwmhPE7tyyhvCkPX4KPt", "entities": [{"start": 52, "end": 83, "label": "SECRET"}]}
+{"text": "feel free to my direct line is seven one three four five nine nine three four six if you have questions", "entities": [{"start": 31, "end": 81, "label": "PII"}]}
+{"text": "bill the card starting with eight three three three", "entities": [{"start": 28, "end": 51, "label": "PII"}]}
+{"text": "use the key qwerty", "entities": [{"start": 12, "end": 18, "label": "SECRET"}]}
+{"text": "add this to your env file: the access token is equals eyJhbGcFMrWELWZ8wzjH", "entities": [{"start": 54, "end": 74, "label": "SECRET"}]}
+{"text": "my social security is three eight zero dash one five dash one eight nine three please keep this confidential", "entities": [{"start": 22, "end": 78, "label": "PII"}]}
+{"text": "for verification purposes my social security is two two one dash eight one dash seven eight one eight", "entities": [{"start": 48, "end": 101, "label": "PII"}]}
+{"text": "the api key starts with ess kay dash and then more characters", "entities": [{"start": 24, "end": 36, "label": "SECRET"}]}
+{"text": "my details are brandon at gmail dot edu for any follow up", "entities": [{"start": 15, "end": 39, "label": "PII"}]}
+{"text": "temporary password for your account is monkey99", "entities": [{"start": 39, "end": 47, "label": "SECRET"}]}
+{"text": "my mobile is six one seven seven eight five two eight seven four anytime after nine am", "entities": [{"start": 13, "end": 64, "label": "PII"}]}
+{"text": "text me at three zero three eight one eight five five two six", "entities": [{"start": 11, "end": 61, "label": "PII"}]}
+{"text": "my card number starts with two two nine four and ends with the last four i gave you", "entities": [{"start": 27, "end": 44, "label": "PII"}]}
+{"text": "the form requires the last four of my social are six eight seven dash four six dash eight six nine zero to process the application", "entities": [{"start": 49, "end": 103, "label": "PII"}]}
+{"text": "call me at seven zero two five seven seven seven eight one two anytime after nine am", "entities": [{"start": 11, "end": 62, "label": "PII"}]}
+{"text": "export API_KEY equals xoxb-1233Ma5FDEkUturFIxYeBJf", "entities": [{"start": 22, "end": 50, "label": "SECRET"}]}
+{"text": "hit me up at john underscore green at dev dot net", "entities": [{"start": 13, "end": 49, "label": "PII"}]}
+{"text": "the key starts with key_prod_abcI0YzH1D2De3SF3X followed by random characters", "entities": [{"start": 20, "end": 47, "label": "SECRET"}]}
+{"text": "export API_KEY equals ghp_abcB6knlceQmYjKtTYfII1G4aRK", "entities": [{"start": 22, "end": 53, "label": "SECRET"}]}
+{"text": "phone me at five five five eight seven two one five zero eight anytime after nine am", "entities": [{"start": 12, "end": 62, "label": "PII"}]}
+{"text": "the first four digits of my card are three four two four", "entities": [{"start": 37, "end": 56, "label": "PII"}]}
+{"text": "my private key is access99 do not share this", "entities": [{"start": 18, "end": 26, "label": "SECRET"}]}
+{"text": "use the key n4rxyj38xrg", "entities": [{"start": 12, "end": 23, "label": "SECRET"}]}
+{"text": "feel free to my cell is three one two four six three five two three two if you have questions", "entities": [{"start": 24, "end": 71, "label": "PII"}]}
+{"text": "feel free to my number is six one seven nine one one one two eight two if you have questions", "entities": [{"start": 26, "end": 70, "label": "PII"}]}
+{"text": "use access99 to log in to the staging server", "entities": [{"start": 4, "end": 12, "label": "SECRET"}]}
+{"text": "my direct line is four one five two five four four seven eight eight anytime after nine am", "entities": [{"start": 18, "end": 68, "label": "PII"}]}
+{"text": "hit me up at mike at gmail dot net", "entities": [{"start": 13, "end": 34, "label": "PII"}]}
+{"text": "email me at mike underscore baker at gmail dot com", "entities": [{"start": 12, "end": 50, "label": "PII"}]}
+{"text": "the best way to reach me is phone me at seven zero two two nine five two four zero two", "entities": [{"start": 40, "end": 86, "label": "PII"}]}
+{"text": "the pin is the last four digits of my old phone number", "entities": [{"start": 0, "end": 54, "label": "SECRET"}]}
+{"text": "login with username admin and password football9", "entities": [{"start": 39, "end": 48, "label": "SECRET"}]}
+{"text": "export API_KEY equals sk-projnrWJVEFJqH9HUVBn", "entities": [{"start": 22, "end": 45, "label": "SECRET"}]}
+{"text": "the default credential is starwars9 until you reset it", "entities": [{"start": 26, "end": 35, "label": "SECRET"}]}
+{"text": "the best way to reach me is call me at six one seven two three zero nine seven five one", "entities": [{"start": 39, "end": 87, "label": "PII"}]}
+{"text": "my credit card is seven nine eight two you have the rest on file", "entities": [{"start": 18, "end": 38, "label": "PII"}]}
+{"text": "the access key is princess1 do not share this", "entities": [{"start": 18, "end": 27, "label": "SECRET"}]}
+{"text": "charge the card that ends in five nine eight nine", "entities": [{"start": 29, "end": 49, "label": "PII"}]}
+{"text": "send it to jane at dev dot net", "entities": [{"start": 11, "end": 30, "label": "PII"}]}
+{"text": "contact is chris at tech dot edu", "entities": [{"start": 11, "end": 32, "label": "PII"}]}
+{"text": "hit me up at anna at gmail dot edu", "entities": [{"start": 13, "end": 34, "label": "PII"}]}
+{"text": "get in touch at olivia dot baker at hotmail dot co", "entities": [{"start": 16, "end": 50, "label": "PII"}]}
+{"text": "the best way to reach me is call me at three zero three two nine four five one seven three", "entities": [{"start": 39, "end": 90, "label": "PII"}]}
+{"text": "feel free to my cell is five five five two one one eight one one nine if you have questions", "entities": [{"start": 24, "end": 69, "label": "PII"}]}
+{"text": "the the secret key is is rk_liveSQND6wskOIsDTSI463Onn2A rotate it weekly", "entities": [{"start": 25, "end": 55, "label": "SECRET"}]}
+{"text": "reach me at omar dash baker at io dot com", "entities": [{"start": 12, "end": 41, "label": "PII"}]}
+{"text": "my cell is three zero three seven two four seven two zero nine", "entities": [{"start": 11, "end": 62, "label": "PII"}]}
+{"text": "the best way to reach me is reach me on six one seven nine seven one six three two five", "entities": [{"start": 40, "end": 87, "label": "PII"}]}
+{"text": "the best way to reach me is my direct line is six one seven seven two seven nine two seven zero", "entities": [{"start": 46, "end": 95, "label": "PII"}]}
+{"text": "the master password follows the pattern name plus birthday", "entities": [{"start": 0, "end": 58, "label": "SECRET"}]}
+{"text": "my social is four zero four dash eight five dash eight zero two five", "entities": [{"start": 13, "end": 68, "label": "PII"}]}
+{"text": "login with username admin and password letmein", "entities": [{"start": 39, "end": 46, "label": "SECRET"}]}
+{"text": "the api key starts with gee aych pee underscore and then more characters", "entities": [{"start": 24, "end": 47, "label": "SECRET"}]}
+{"text": "you can call me at three one two five zero eight six three seven eight", "entities": [{"start": 19, "end": 70, "label": "PII"}]}
+{"text": "hit me up at rachel dot adams at tech dot co", "entities": [{"start": 13, "end": 44, "label": "PII"}]}
+{"text": "export API_KEY equals ghp_abcxiyKJAEH45kkrl", "entities": [{"start": 22, "end": 43, "label": "SECRET"}]}
+{"text": "the api key starts with bee ee ay ar ee ar space and then more characters", "entities": [{"start": 24, "end": 48, "label": "SECRET"}]}
+{"text": "contact is fatima at io dot org", "entities": [{"start": 11, "end": 31, "label": "PII"}]}
+{"text": "the key starts with xoxb-123tp0yiNMxeXVyUR2CEK10f8N followed by random characters", "entities": [{"start": 20, "end": 51, "label": "SECRET"}]}
+{"text": "my credit card is eight four zero six you have the rest on file", "entities": [{"start": 18, "end": 37, "label": "PII"}]}
+{"text": "login with username admin and password sunshine3", "entities": [{"start": 39, "end": 48, "label": "SECRET"}]}
+{"text": "the best way to reach me is ring me at six one seven seven two five two one nine three", "entities": [{"start": 39, "end": 86, "label": "PII"}]}
+{"text": "get in touch at mike dash harris at gmail dot co", "entities": [{"start": 16, "end": 48, "label": "PII"}]}
+{"text": "my cell is four zero four one seven zero nine two eight nine", "entities": [{"start": 11, "end": 60, "label": "PII"}]}
+{"text": "the pin is the last four digits of my old phone number", "entities": [{"start": 0, "end": 54, "label": "SECRET"}]}
+{"text": "the key starts with ghp_abcWJVnBXcbqgv3je68u93 followed by random characters", "entities": [{"start": 20, "end": 46, "label": "SECRET"}]}
+{"text": "the api key is eyJhbGck3jgmlRSTqrodJ0jwAsPLm", "entities": [{"start": 15, "end": 44, "label": "SECRET"}]}
+{"text": "phone me at seven one three nine four zero four seven two eight", "entities": [{"start": 12, "end": 63, "label": "PII"}]}
+{"text": "the best way to reach me is phone me at seven one three four eight eight six three six three", "entities": [{"start": 40, "end": 92, "label": "PII"}]}
+{"text": "my address is chris at outlook dot edu", "entities": [{"start": 14, "end": 38, "label": "PII"}]}
+{"text": "the address wei dot jackson at io dot edu was added to the system", "entities": [{"start": 12, "end": 41, "label": "PII"}]}
+{"text": "you can find me at sarah underscore mitchell at yahoo dot edu", "entities": [{"start": 19, "end": 61, "label": "PII"}]}
+{"text": "the api key starts with pee kay underscore live underscore and then more characters", "entities": [{"start": 24, "end": 58, "label": "SECRET"}]}
+{"text": "the root password is o30ubmc9 change it after first login", "entities": [{"start": 21, "end": 29, "label": "SECRET"}]}
+{"text": "bill the card starting with four five two two", "entities": [{"start": 28, "end": 45, "label": "PII"}]}
+{"text": "add this to your env file: the api key is equals rk_liveEmxIOzESBkJX", "entities": [{"start": 49, "end": 68, "label": "SECRET"}]}
+{"text": "get in touch at sarah dot mitchell at startup dot org", "entities": [{"start": 16, "end": 53, "label": "PII"}]}
+{"text": "contact is nina at corp dot co", "entities": [{"start": 11, "end": 30, "label": "PII"}]}
+{"text": "the best way to reach me is my mobile is two zero six four nine eight one three two zero", "entities": [{"start": 41, "end": 88, "label": "PII"}]}
+{"text": "send it to tyler dot anderson at dev dot com", "entities": [{"start": 11, "end": 44, "label": "PII"}]}
+{"text": "the root password is football9 change it after first login", "entities": [{"start": 21, "end": 30, "label": "SECRET"}]}
+{"text": "my address is mike dot mitchell at dev dot org", "entities": [{"start": 14, "end": 46, "label": "PII"}]}
+{"text": "feel free to you can call me at four one five seven seven four two three eight nine if you have questions", "entities": [{"start": 32, "end": 83, "label": "PII"}]}
+{"text": "the api key starts with ex oh ex bee dash and then more characters", "entities": [{"start": 24, "end": 41, "label": "SECRET"}]}
+{"text": "my password hint is my favorite team and the year they won", "entities": [{"start": 0, "end": 58, "label": "SECRET"}]}
+{"text": "the key starts with sk-projdLbDuMXvlX1dj followed by random characters", "entities": [{"start": 20, "end": 40, "label": "SECRET"}]}
+{"text": "my details are james at io dot io for any follow up", "entities": [{"start": 15, "end": 33, "label": "PII"}]}
+{"text": "i use my childhood nickname as the passphrase it has uppercase and numbers", "entities": [{"start": 0, "end": 74, "label": "SECRET"}]}
+{"text": "the passphrase is welcome1 do not share this", "entities": [{"start": 18, "end": 26, "label": "SECRET"}]}
+{"text": "my api key is xoxb-123kCzH7mtqhjQZR", "entities": [{"start": 14, "end": 35, "label": "SECRET"}]}
+{"text": "get in touch at david dot anderson at company dot org", "entities": [{"start": 16, "end": 53, "label": "PII"}]}
+{"text": "the form requires for verification my SSN is five seven nine dash nine eight dash five nine eight two to process the application", "entities": [{"start": 45, "end": 101, "label": "PII"}]}
+{"text": "drop me a line at wei underscore wilson at tech dot net", "entities": [{"start": 18, "end": 55, "label": "PII"}]}
+{"text": "feel free to reach me on five five five two one eight five two seven nine if you have questions", "entities": [{"start": 25, "end": 73, "label": "PII"}]}
+{"text": "bill the card starting with zero five seven one", "entities": [{"start": 28, "end": 47, "label": "PII"}]}
+{"text": "the first four digits of my card are zero six four eight", "entities": [{"start": 37, "end": 56, "label": "PII"}]}
+{"text": "my password for the server is the name of my dog followed by the year i was born", "entities": [{"start": 0, "end": 80, "label": "SECRET"}]}
+{"text": "charge the card that ends in eight five one zero", "entities": [{"start": 29, "end": 48, "label": "PII"}]}
+{"text": "add this to your env file: the access token is equals pk_liveiLRc3uoU53bYsrERg1", "entities": [{"start": 54, "end": 79, "label": "SECRET"}]}
+{"text": "feel free to ring me at four one five eight six one eight seven seven seven if you have questions", "entities": [{"start": 24, "end": 75, "label": "PII"}]}
+{"text": "the first four digits of my card are seven two six one", "entities": [{"start": 37, "end": 54, "label": "PII"}]}
+{"text": "the root password is dragon7 change it after first login", "entities": [{"start": 21, "end": 28, "label": "SECRET"}]}
+{"text": "bill the card starting with zero five five four", "entities": [{"start": 28, "end": 47, "label": "PII"}]}
+{"text": "the first four digits of my card are nine eight four eight", "entities": [{"start": 37, "end": 58, "label": "PII"}]}
+{"text": "hit me up at chris dot thomas at acme dot co", "entities": [{"start": 13, "end": 44, "label": "PII"}]}
+{"text": "export API_KEY equals rk_liveFyltn3Wd9GV98gOqY4d9n", "entities": [{"start": 22, "end": 50, "label": "SECRET"}]}
+{"text": "my api key is access99", "entities": [{"start": 14, "end": 22, "label": "SECRET"}]}
+{"text": "the api key starts with ex oh ex bee dash and then more characters", "entities": [{"start": 24, "end": 41, "label": "SECRET"}]}
+{"text": "for verification purposes for verification my SSN is seven two four dash two two dash four four zero four", "entities": [{"start": 53, "end": 105, "label": "PII"}]}
+{"text": "the form requires for verification my SSN is three three seven dash four six dash five six three two to process the application", "entities": [{"start": 45, "end": 100, "label": "PII"}]}
+{"text": "the first four digits of my card are five nine zero nine", "entities": [{"start": 37, "end": 56, "label": "PII"}]}
+{"text": "the pin is the last four digits of my old phone number", "entities": [{"start": 0, "end": 54, "label": "SECRET"}]}
+{"text": "my card number starts with zero six two zero and ends with the last four i gave you", "entities": [{"start": 27, "end": 44, "label": "PII"}]}
+{"text": "the key starts with key_prod_abca970IKrQDurur followed by random characters", "entities": [{"start": 20, "end": 45, "label": "SECRET"}]}
+{"text": "my direct line is five five five four nine eight six five zero seven anytime after nine am", "entities": [{"start": 18, "end": 68, "label": "PII"}]}
+{"text": "i set the password to password123 for now", "entities": [{"start": 22, "end": 33, "label": "SECRET"}]}
+{"text": "for security questions i always use my first pets name", "entities": [{"start": 0, "end": 54, "label": "SECRET"}]}
+{"text": "export API_KEY equals AKIAp4tZJhPdnFcy21Vtf", "entities": [{"start": 22, "end": 43, "label": "SECRET"}]}
+{"text": "bill the card starting with two zero four three", "entities": [{"start": 28, "end": 47, "label": "PII"}]}
+{"text": "for verification purposes my tax id is four two eight dash nine five dash two seven one three", "entities": [{"start": 39, "end": 93, "label": "PII"}]}
+{"text": "the last four of my social are one nine three dash seven zero dash six seven zero zero please keep this confidential", "entities": [{"start": 31, "end": 86, "label": "PII"}]}
+{"text": "i set the recovery phrase to something only i would know from childhood", "entities": [{"start": 0, "end": 71, "label": "SECRET"}]}
+{"text": "the key starts with ghp_abcHnAnqZuJJEvQdgWCh1Ba7mQi followed by random characters", "entities": [{"start": 20, "end": 51, "label": "SECRET"}]}
+{"text": "charge the card that ends in four three nine seven", "entities": [{"start": 29, "end": 50, "label": "PII"}]}
+{"text": "my card number starts with seven nine eight five and ends with the last four i gave you", "entities": [{"start": 27, "end": 48, "label": "PII"}]}
+{"text": "my backup code is stored in the notes app under personal", "entities": [{"start": 0, "end": 56, "label": "SECRET"}]}
+{"text": "feel free to reach me on three zero three seven two one two eight seven six if you have questions", "entities": [{"start": 25, "end": 75, "label": "PII"}]}
+{"text": "authorization header should be Bearer AKIAnmOF17QDikXnL6SRr30Cns", "entities": [{"start": 38, "end": 64, "label": "SECRET"}]}
+{"text": "the credential is monkey99", "entities": [{"start": 18, "end": 26, "label": "SECRET"}]}
+{"text": "write to me at chris underscore anderson at acme dot io", "entities": [{"start": 15, "end": 55, "label": "PII"}]}
+{"text": "for verification purposes for verification my SSN is two eight three dash four eight dash one two three one", "entities": [{"start": 53, "end": 107, "label": "PII"}]}
+{"text": "authorization header should be Bearer sk-projQzxHDjRNsPPq", "entities": [{"start": 38, "end": 57, "label": "SECRET"}]}
+{"text": "the api key starts with aych tee tee pee ess colon slash slash and then more characters", "entities": [{"start": 24, "end": 62, "label": "SECRET"}]}
+{"text": "please reach out to olivia dot thomas at hotmail dot co at your earliest convenience", "entities": [{"start": 20, "end": 55, "label": "PII"}]}
+{"text": "the password is daniel92 do not share this", "entities": [{"start": 16, "end": 24, "label": "SECRET"}]}
+{"text": "the default credential is welcome1 until you reset it", "entities": [{"start": 26, "end": 34, "label": "SECRET"}]}
+{"text": "my social security is five two three dash one six dash four zero seven three please keep this confidential", "entities": [{"start": 22, "end": 76, "label": "PII"}]}
+{"text": "the last four of my social are nine one one dash four nine dash five seven two eight", "entities": [{"start": 31, "end": 84, "label": "PII"}]}
+{"text": "login with username admin and password password123", "entities": [{"start": 39, "end": 50, "label": "SECRET"}]}
+{"text": "the best way to reach me is ring me at three one two five four zero six two seven nine", "entities": [{"start": 39, "end": 86, "label": "PII"}]}
+{"text": "the api key starts with gee aych pee underscore and then more characters", "entities": [{"start": 24, "end": 47, "label": "SECRET"}]}
+{"text": "my details are david at dev dot co for any follow up", "entities": [{"start": 15, "end": 34, "label": "PII"}]}
+{"text": "feel free to my number is three one two three eight one eight two zero six if you have questions", "entities": [{"start": 26, "end": 74, "label": "PII"}]}
+{"text": "my tax id is seven nine zero dash eight three dash one three three nine please keep this confidential", "entities": [{"start": 13, "end": 71, "label": "PII"}]}
+{"text": "phone me at seven zero two one five three six seven three three", "entities": [{"start": 12, "end": 63, "label": "PII"}]}
+{"text": "email me at omar dash king at acme dot co", "entities": [{"start": 12, "end": 41, "label": "PII"}]}
+{"text": "the best way to reach me is text me at three one two nine six zero five five four three", "entities": [{"start": 39, "end": 87, "label": "PII"}]}
+{"text": "the security pin is based on my wifes birthday backwards", "entities": [{"start": 0, "end": 56, "label": "SECRET"}]}
+{"text": "the best way to reach me is my number is three one two two five one one zero nine zero", "entities": [{"start": 41, "end": 86, "label": "PII"}]}
+{"text": "you can find me at daniel underscore mitchell at tech dot io", "entities": [{"start": 19, "end": 60, "label": "PII"}]}
+{"text": "the token resets every hour and i store it in my password manager", "entities": [{"start": 0, "end": 65, "label": "SECRET"}]}
+{"text": "the secret key is letmein", "entities": [{"start": 18, "end": 25, "label": "SECRET"}]}
+{"text": "you can find me at emma underscore chen at tech dot com", "entities": [{"start": 19, "end": 55, "label": "PII"}]}
+{"text": "the key starts with Bearer abc123hzcqtRQVJJ8PuGRfPpv followed by random characters", "entities": [{"start": 20, "end": 52, "label": "SECRET"}]}
+{"text": "the api key starts with bee ee ay ar ee ar space and then more characters", "entities": [{"start": 24, "end": 48, "label": "SECRET"}]}
+{"text": "add this to your env file: the api key is equals key_prod_abcHLk8sJ7F3YiUzdrOR", "entities": [{"start": 49, "end": 78, "label": "SECRET"}]}
+{"text": "feel free to ring me at six one seven three two seven four two six nine if you have questions", "entities": [{"start": 24, "end": 71, "label": "PII"}]}
+{"text": "contact me at anna dot scott at corp dot co", "entities": [{"start": 14, "end": 43, "label": "PII"}]}
+{"text": "for security questions i always use my first pets name", "entities": [{"start": 0, "end": 54, "label": "SECRET"}]}
+{"text": "the token resets every hour and i store it in my password manager", "entities": [{"start": 0, "end": 65, "label": "SECRET"}]}
+{"text": "use dragon7 to log in to the staging server", "entities": [{"start": 4, "end": 11, "label": "SECRET"}]}
+{"text": "the address emma dot martin at io dot com was added to the system", "entities": [{"start": 12, "end": 41, "label": "PII"}]}
+{"text": "the api key starts with ay kay eye ay and then more characters", "entities": [{"start": 24, "end": 37, "label": "SECRET"}]}
+{"text": "authorization header should be Bearer Bearer abc123qpepgaxT82Ex", "entities": [{"start": 38, "end": 63, "label": "SECRET"}]}
+{"text": "feel free to my direct line is three one two one six five seven seven nine seven if you have questions", "entities": [{"start": 31, "end": 80, "label": "PII"}]}
+{"text": "export API_KEY equals rk_live8UbzcIZX7N3IO", "entities": [{"start": 22, "end": 42, "label": "SECRET"}]}
+{"text": "email me at lisa dot rodriguez at startup dot net", "entities": [{"start": 12, "end": 49, "label": "PII"}]}
+{"text": "the passphrase is master42", "entities": [{"start": 18, "end": 26, "label": "SECRET"}]}
+{"text": "the form requires the last four of my social are three seven eight dash seven four dash nine eight four seven to process the application", "entities": [{"start": 49, "end": 109, "label": "PII"}]}
+{"text": "the form requires my social security is four one eight dash eight zero dash one two two four to process the application", "entities": [{"start": 40, "end": 92, "label": "PII"}]}
+{"text": "hit me up at lisa dash jackson at tech dot io", "entities": [{"start": 13, "end": 45, "label": "PII"}]}
+{"text": "temporary password for your account is starwars9", "entities": [{"start": 39, "end": 48, "label": "SECRET"}]}
+{"text": "temporary password for your account is wviytwboz", "entities": [{"start": 39, "end": 48, "label": "SECRET"}]}
+{"text": "login with username admin and password letmein", "entities": [{"start": 39, "end": 46, "label": "SECRET"}]}
+{"text": "the answer to secret question is my elementary school name", "entities": [{"start": 0, "end": 58, "label": "SECRET"}]}
+{"text": "the best way to reach me is you can call me at four one five eight five one nine five four eight", "entities": [{"start": 47, "end": 96, "label": "PII"}]}
+{"text": "my email password is the same as my bank just with a number at the end", "entities": [{"start": 0, "end": 70, "label": "SECRET"}]}
+{"text": "the key starts with rk_livesWTpw89WTHXj5bH followed by random characters", "entities": [{"start": 20, "end": 42, "label": "SECRET"}]}
+{"text": "ring me at seven zero two three five five two nine eight eight anytime after nine am", "entities": [{"start": 11, "end": 62, "label": "PII"}]}
+{"text": "my SSN is three zero eight dash four four dash nine nine nine eight please keep this confidential", "entities": [{"start": 10, "end": 67, "label": "PII"}]}
+{"text": "the last four of my social are one eight two dash eight six dash one six five three please keep this confidential", "entities": [{"start": 31, "end": 83, "label": "PII"}]}
+{"text": "the address emma dot young at outlook dot edu was added to the system", "entities": [{"start": 12, "end": 45, "label": "PII"}]}
+{"text": "the bearer token is rk_liveaP4ZPjfFSgpo9sC", "entities": [{"start": 20, "end": 42, "label": "SECRET"}]}
+{"text": "the root password is cxlvpymb5 change it after first login", "entities": [{"start": 21, "end": 30, "label": "SECRET"}]}
+{"text": "the default credential is hunter2 until you reset it", "entities": [{"start": 26, "end": 33, "label": "SECRET"}]}
+{"text": "login with username admin and password football9", "entities": [{"start": 39, "end": 48, "label": "SECRET"}]}
+{"text": "the best way to reach me is you can call me at four zero four four four five seven two one one", "entities": [{"start": 47, "end": 94, "label": "PII"}]}
+{"text": "the token resets every hour and i store it in my password manager", "entities": [{"start": 0, "end": 65, "label": "SECRET"}]}
+{"text": "send it to priya at corp dot net", "entities": [{"start": 11, "end": 32, "label": "PII"}]}
+{"text": "you can call me at two one two nine three eight four eight four eight anytime after nine am", "entities": [{"start": 19, "end": 69, "label": "PII"}]}
+{"text": "add this to your env file: the api key is equals rk_liveVxTtm8A78irc", "entities": [{"start": 49, "end": 68, "label": "SECRET"}]}
+{"text": "my credit card is two two eight one you have the rest on file", "entities": [{"start": 18, "end": 35, "label": "PII"}]}
+{"text": "for verification purposes my social security is five eight three dash four one dash eight four eight three", "entities": [{"start": 48, "end": 106, "label": "PII"}]}
+{"text": "authorization header should be Bearer key_prod_abcwQV7VbeqcdWFMFzRfH", "entities": [{"start": 38, "end": 68, "label": "SECRET"}]}
+{"text": "the access token is pk_livetFmYHyNZQeRT0", "entities": [{"start": 20, "end": 40, "label": "SECRET"}]}
+{"text": "email me at brandon dash taylor at acme dot edu", "entities": [{"start": 12, "end": 47, "label": "PII"}]}
+{"text": "add this to your env file: the secret key is equals pk_liveZFNhbxKl1Kvk3UQrx", "entities": [{"start": 52, "end": 76, "label": "SECRET"}]}
+{"text": "the root password is welcome1 change it after first login", "entities": [{"start": 21, "end": 29, "label": "SECRET"}]}
+{"text": "write to me at priya at dev dot io", "entities": [{"start": 15, "end": 34, "label": "PII"}]}
+{"text": "my details are jessica at acme dot org for any follow up", "entities": [{"start": 15, "end": 38, "label": "PII"}]}
+{"text": "bill the card starting with nine seven eight two", "entities": [{"start": 28, "end": 48, "label": "PII"}]}
+{"text": "hit me up at kevin dash carter at startup dot io", "entities": [{"start": 13, "end": 48, "label": "PII"}]}
+{"text": "my api key is eyJhbGcjKV65IgrHvzxEL", "entities": [{"start": 14, "end": 35, "label": "SECRET"}]}
+{"text": "the answer to secret question is my elementary school name", "entities": [{"start": 0, "end": 58, "label": "SECRET"}]}
+{"text": "ring me at seven one three nine five four two three four one", "entities": [{"start": 11, "end": 60, "label": "PII"}]}
+{"text": "feel free to my mobile is two zero six one seven one six four zero nine if you have questions", "entities": [{"start": 26, "end": 71, "label": "PII"}]}
+{"text": "login with username admin and password sunshine3", "entities": [{"start": 39, "end": 48, "label": "SECRET"}]}
+{"text": "my address is james dash wilson at work dot com", "entities": [{"start": 14, "end": 47, "label": "PII"}]}
+{"text": "my mobile is two one two eight one three five nine four one", "entities": [{"start": 13, "end": 59, "label": "PII"}]}
+{"text": "please reach out to daniel dot wright at tech dot net at your earliest convenience", "entities": [{"start": 20, "end": 53, "label": "PII"}]}
+{"text": "add this to your env file: the private key is equals xoxb-123otTwKRvJi6ZY8H", "entities": [{"start": 53, "end": 75, "label": "SECRET"}]}
+{"text": "export API_KEY equals token xyz789baTo2tgFsec6CGG", "entities": [{"start": 22, "end": 49, "label": "SECRET"}]}
+{"text": "you can find me at priya dash wright at co dot edu", "entities": [{"start": 19, "end": 50, "label": "PII"}]}
+{"text": "send it to brandon at co dot com", "entities": [{"start": 11, "end": 32, "label": "PII"}]}
+{"text": "add this to your env file: my api key is equals pk_live5fZTvvWGvgSCecSbvg", "entities": [{"start": 48, "end": 73, "label": "SECRET"}]}
+{"text": "login with username admin and password shadow88", "entities": [{"start": 39, "end": 47, "label": "SECRET"}]}
+{"text": "the best way to reach me is ring me at six one seven six six eight four nine three seven", "entities": [{"start": 39, "end": 88, "label": "PII"}]}
+{"text": "charge the card that ends in five seven two zero", "entities": [{"start": 29, "end": 48, "label": "PII"}]}
+{"text": "for verification purposes my social security number is three seven two dash two eight dash two one six nine", "entities": [{"start": 55, "end": 107, "label": "PII"}]}
+{"text": "i set the password to ivsolmlgs for now", "entities": [{"start": 22, "end": 31, "label": "SECRET"}]}
+{"text": "the root password is admin123 change it after first login", "entities": [{"start": 21, "end": 29, "label": "SECRET"}]}
+{"text": "i set the password to master42 for now", "entities": [{"start": 22, "end": 30, "label": "SECRET"}]}
+{"text": "the form requires my social is four four eight dash three three dash one eight four one to process the application", "entities": [{"start": 31, "end": 87, "label": "PII"}]}
+{"text": "the first four digits of my card are nine three four six", "entities": [{"start": 37, "end": 56, "label": "PII"}]}
+{"text": "the api key starts with aych tee tee pee ess colon slash slash and then more characters", "entities": [{"start": 24, "end": 62, "label": "SECRET"}]}
+{"text": "my details are lisa at corp dot org for any follow up", "entities": [{"start": 15, "end": 35, "label": "PII"}]}

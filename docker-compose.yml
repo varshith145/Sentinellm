@@ -30,12 +30,14 @@ services:
       SENTINELLM_DATABASE_URL_SYNC: "postgresql://ppg:ppg@db:5432/ppg"
       SENTINELLM_OLLAMA_BASE_URL: "http://host.docker.internal:11434"
       SENTINELLM_LLM_BACKEND: "ollama"
+      SENTINELLM_OLLAMA_MODEL: "qwen2.5:0.5b"
       SENTINELLM_MODEL_PATH: "/app/model/trained"
       SENTINELLM_POLICY_PATH: "/app/policies/default.yaml"
       SENTINELLM_SEMANTIC_MODEL_ENABLED: "true"
       SENTINELLM_DEBUG: "false"
     volumes:
       - ./model/trained:/app/model/trained:ro
+      - ./gateway/policies:/app/policies:ro  # live-mount so policy changes take effect without rebuilding
     depends_on:
       db:
         condition: service_healthy

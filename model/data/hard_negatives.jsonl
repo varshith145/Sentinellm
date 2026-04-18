@@ -151,3 +151,123 @@
 {"text": "the phone number format varies across different countries", "entities": []}
 {"text": "insurance underwriting uses statistical models to assess risk", "entities": []}
 {"text": "the security team responds to incidents within fifteen minutes", "entities": []}
+{"text": "the email validation function checks for at sign and dot in the domain", "entities": []}
+{"text": "the aws console shows your billing and usage metrics", "entities": []}
+{"text": "we use aws for cloud hosting and s3 for file storage", "entities": []}
+{"text": "the password field must be at least eight characters long", "entities": []}
+{"text": "the email field is required and must contain an at symbol", "entities": []}
+{"text": "a jwt token contains three base sixty four encoded sections", "entities": []}
+{"text": "the email validation function checks for at sign and dot in the domain", "entities": []}
+{"text": "deploy to aws using the cloudformation template provided", "entities": []}
+{"text": "the gdpr requires consent before collecting personal data", "entities": []}
+{"text": "the social security administration manages retirement benefits", "entities": []}
+{"text": "a jwt token contains three base sixty four encoded sections", "entities": []}
+{"text": "the login page has a forgot password link below the form", "entities": []}
+{"text": "email marketing campaigns have an average open rate of twenty percent", "entities": []}
+{"text": "password hashing uses bcrypt with twelve rounds of salting", "entities": []}
+{"text": "the gdpr requires consent before collecting personal data", "entities": []}
+{"text": "phone screens typically have resolutions in the thousands of pixels", "entities": []}
+{"text": "dial the conference bridge and enter the meeting code", "entities": []}
+{"text": "aws lambda functions run serverless workloads at scale", "entities": []}
+{"text": "we use aws for cloud hosting and s3 for file storage", "entities": []}
+{"text": "implement data masking for non production environments", "entities": []}
+{"text": "dial the conference bridge and enter the meeting code", "entities": []}
+{"text": "deploy to aws using the cloudformation template provided", "entities": []}
+{"text": "the login page has a forgot password link below the form", "entities": []}
+{"text": "the api rate limit is one thousand requests per hour", "entities": []}
+{"text": "our uptime was ninety nine point nine percent last quarter", "entities": []}
+{"text": "the algorithm runs in order of n squared time complexity", "entities": []}
+{"text": "phone screens typically have resolutions in the thousands of pixels", "entities": []}
+{"text": "rotate your api keys every ninety days as a best practice", "entities": []}
+{"text": "social security is an important government retirement program", "entities": []}
+{"text": "email marketing campaigns have an average open rate of twenty percent", "entities": []}
+{"text": "version three point one four of the library was released", "entities": []}
+{"text": "enable two factor authentication on your account settings", "entities": []}
+{"text": "the authentication flow uses oauth two point zero", "entities": []}
+{"text": "contactless payments use nfc technology for card transactions", "entities": []}
+{"text": "anonymize user data before using it for analytics", "entities": []}
+{"text": "social security numbers are used for tax identification", "entities": []}
+{"text": "use environment variables to store api keys never hardcode them", "entities": []}
+{"text": "the login page has a forgot password link below the form", "entities": []}
+{"text": "never commit api keys or secrets to version control", "entities": []}
+{"text": "the privacy policy explains how we handle user information", "entities": []}
+{"text": "the login page has a forgot password link below the form", "entities": []}
+{"text": "the email validation function checks for at sign and dot in the domain", "entities": []}
+{"text": "the social security act was signed in nineteen thirty five", "entities": []}
+{"text": "rotate your api keys every ninety days as a best practice", "entities": []}
+{"text": "api tokens expire after twenty four hours for security", "entities": []}
+{"text": "the regex pattern for email validation is well documented online", "entities": []}
+{"text": "api tokens expire after twenty four hours for security", "entities": []}
+{"text": "social security is an important government retirement program", "entities": []}
+{"text": "the gdpr requires consent before collecting personal data", "entities": []}
+{"text": "access to production credentials requires approval from security", "entities": []}
+{"text": "aws provides over two hundred cloud services globally", "entities": []}
+{"text": "strong passwords combine uppercase lowercase numbers and symbols", "entities": []}
+{"text": "email threading groups related messages in the inbox", "entities": []}
+{"text": "a jwt token contains three base sixty four encoded sections", "entities": []}
+{"text": "credit card fraud detection uses machine learning models", "entities": []}
+{"text": "email marketing campaigns have an average open rate of twenty percent", "entities": []}
+{"text": "the server processes two hundred requests per second", "entities": []}
+{"text": "the privacy policy explains how we handle user information", "entities": []}
+{"text": "email threading groups related messages in the inbox", "entities": []}
+{"text": "api tokens expire after twenty four hours for security", "entities": []}
+{"text": "the email template uses placeholder variables for personalization", "entities": []}
+{"text": "use environment variables to store api keys never hardcode them", "entities": []}
+{"text": "password hashing uses bcrypt with twelve rounds of salting", "entities": []}
+{"text": "the function accepts three to five parameters", "entities": []}
+{"text": "the email template uses placeholder variables for personalization", "entities": []}
+{"text": "credit card fraud detection uses machine learning models", "entities": []}
+{"text": "the authentication flow uses oauth two point zero", "entities": []}
+{"text": "anonymize user data before using it for analytics", "entities": []}
+{"text": "password managers help users create strong unique passwords", "entities": []}
+{"text": "the privacy policy explains how we handle user information", "entities": []}
+{"text": "the function accepts three to five parameters", "entities": []}
+{"text": "the login page has a forgot password link below the form", "entities": []}
+{"text": "credit card fraud detection uses machine learning models", "entities": []}
+{"text": "never commit api keys or secrets to version control", "entities": []}
+{"text": "contactless payments use nfc technology for card transactions", "entities": []}
+{"text": "the access token is stored in an httponly cookie", "entities": []}
+{"text": "the server processes two hundred requests per second", "entities": []}
+{"text": "api tokens expire after twenty four hours for security", "entities": []}
+{"text": "aws provides over two hundred cloud services globally", "entities": []}
+{"text": "the call center handles five hundred calls per day", "entities": []}
+{"text": "contactless payments use nfc technology for card transactions", "entities": []}
+{"text": "aws provides over two hundred cloud services globally", "entities": []}
+{"text": "the access token is stored in an httponly cookie", "entities": []}
+{"text": "credit card fraud detection uses machine learning models", "entities": []}
+{"text": "call the function with five arguments and return one result", "entities": []}
+{"text": "the privacy policy explains how we handle user information", "entities": []}
+{"text": "strong passwords combine uppercase lowercase numbers and symbols", "entities": []}
+{"text": "aws provides over two hundred cloud services globally", "entities": []}
+{"text": "the array has one thousand and twenty four elements", "entities": []}
+{"text": "the server processes two hundred requests per second", "entities": []}
+{"text": "the credit card processing fee is two point nine percent", "entities": []}
+{"text": "dial the conference bridge and enter the meeting code", "entities": []}
+{"text": "configure the email server to use tls encryption", "entities": []}
+{"text": "email marketing campaigns have an average open rate of twenty percent", "entities": []}
+{"text": "the database schema has a users table with an email column", "entities": []}
+{"text": "the api rate limit is one thousand requests per hour", "entities": []}
+{"text": "rotate your api keys every ninety days as a best practice", "entities": []}
+{"text": "deploy to aws using the cloudformation template provided", "entities": []}
+{"text": "phone screens typically have resolutions in the thousands of pixels", "entities": []}
+{"text": "the password field must be at least eight characters long", "entities": []}
+{"text": "strong passwords combine uppercase lowercase numbers and symbols", "entities": []}
+{"text": "the email template uses placeholder variables for personalization", "entities": []}
+{"text": "aws lambda functions run serverless workloads at scale", "entities": []}
+{"text": "the server processes two hundred requests per second", "entities": []}
+{"text": "social security numbers are used for tax identification", "entities": []}
+{"text": "social security is an important government retirement program", "entities": []}
+{"text": "our uptime was ninety nine point nine percent last quarter", "entities": []}
+{"text": "version three point one four of the library was released", "entities": []}
+{"text": "data retention policies must comply with regional regulations", "entities": []}
+{"text": "the password field must be at least eight characters long", "entities": []}
+{"text": "credit card fraud detection uses machine learning models", "entities": []}
+{"text": "configure the email server to use tls encryption", "entities": []}
+{"text": "call the function with five arguments and return one result", "entities": []}
+{"text": "the social security act was signed in nineteen thirty five", "entities": []}
+{"text": "the login page has a forgot password link below the form", "entities": []}
+{"text": "the email validation function checks for at sign and dot in the domain", "entities": []}
+{"text": "configure the email server to use tls encryption", "entities": []}
+{"text": "data retention policies must comply with regional regulations", "entities": []}
+{"text": "social security numbers are used for tax identification", "entities": []}
+{"text": "the privacy policy explains how we handle user information", "entities": []}

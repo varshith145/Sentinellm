@@ -10,12 +10,14 @@ Per PRD Section 13.
 """
 
 import os
+from datetime import datetime, timedelta
 
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 from sqlalchemy import create_engine, text
+from sqlalchemy.exc import OperationalError
 
 # --- Database Connection ---
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://ppg:ppg@db:5432/ppg")
@@ -44,32 +46,62 @@ st.markdown("""
     div[data-testid="stSidebar"] {
         background: linear-gradient(180deg, #0d1117 0%, #161b22 100%);
     }
+    .status-dot-ok { color: #00d26a; font-size: 12px; }
+    .status-dot-err { color: #ff4444; font-size: 12px; }
 </style>
 """, unsafe_allow_html=True)
+
+
+# --- DB Connection Helper ---
+def get_connection():
+    return engine.connect()
+
+
+def check_db_connection() -> bool:
+    try:
+        with get_connection() as conn:
+            conn.execute(text("SELECT 1"))
+        return True
+    except Exception:
+        return False
 
 
 # --- Sidebar Navigation ---
 st.sidebar.title("🛡️ SentinelLM")
 st.sidebar.markdown("---")
+
 page = st.sidebar.radio(
     "Navigation",
     ["📊 Overview", "📋 Request Log", "🔍 Request Detail"],
     label_visibility="collapsed",
 )
+
+st.sidebar.markdown("---")
+
+# DB connection status
+db_ok = check_db_connection()
+if db_ok:
+    st.sidebar.markdown("🟢 **Database Connected**")
+else:
+    st.sidebar.markdown("🔴 **Database Offline**")
+
+st.sidebar.markdown("---")
+
+# Refresh button
+if st.sidebar.button("🔄 Refresh Data"):
+    st.cache_data.clear()
+    st.rerun()
+
 st.sidebar.markdown("---")
 st.sidebar.markdown(
     "**SentinelLM** v1.0  \n"
-    "AI Gateway Security Dashboard"
+    "AI Gateway Security Dashboard  \n"
+    f"*Updated: {datetime.now().strftime('%H:%M:%S')}*"
 )
 
 
-def get_connection():
-    """Get a database connection."""
-    return engine.connect()
-
-
 def color_decision(val):
-    """Color-code decision values."""
+    """Color-code decision values for dataframe styling."""
     colors = {
         "ALLOW": "color: #00d26a",
         "MASK": "color: #f9a825",
@@ -84,6 +116,10 @@ def color_decision(val):
 if page == "📊 Overview":
     st.title("📊 Overview Dashboard")
     st.markdown("Real-time overview of SentinelLM gateway activity.")
+
+    if not db_ok:
+        st.error("⚠️ Cannot connect to the database. Make sure PostgreSQL is running.")
+        st.stop()
 
     try:
         with get_connection() as conn:
@@ -115,18 +151,44 @@ if page == "📊 Overview":
                 conn,
             )
 
+            # Average latencies
+            latencies = pd.read_sql(
+                text("""
+                    SELECT
+                        ROUND(AVG(detection_latency_ms)::numeric, 1) as avg_detection_ms,
+                        ROUND(AVG(llm_latency_ms)::numeric, 1) as avg_llm_ms,
+                        ROUND(AVG(total_latency_ms)::numeric, 1) as avg_total_ms
+                    FROM audit_log
+                    WHERE total_latency_ms IS NOT NULL
+                """),
+                conn,
+            )
+
             # Top redaction types
             redactions = pd.read_sql(
                 text("""
                     SELECT input_redactions
                     FROM audit_log
-                    WHERE input_redactions != '{}'::jsonb
+                    WHERE input_redactions IS NOT NULL
+                      AND input_redactions != '{}'::jsonb
+                """),
+                conn,
+            )
+
+            # Recent blocked requests
+            recent_blocks = pd.read_sql(
+                text("""
+                    SELECT request_id, created_at, user_id, reasons
+                    FROM audit_log
+                    WHERE input_decision = 'BLOCK'
+                    ORDER BY created_at DESC
+                    LIMIT 5
                 """),
                 conn,
             )
 
         # --- Metrics Row ---
-        col1, col2, col3, col4 = st.columns(4)
+        col1, col2, col3, col4, col5 = st.columns(5)
 
         allow_count = int(
             decisions[decisions["input_decision"] == "ALLOW"]["count"].sum()
@@ -138,10 +200,22 @@ if page == "📊 Overview":
             decisions[decisions["input_decision"] == "BLOCK"]["count"].sum()
         ) if not decisions.empty else 0
 
+        avg_total = (
+            float(latencies["avg_total_ms"].iloc[0])
+            if not latencies.empty and latencies["avg_total_ms"].iloc[0] is not None
+            else None
+        )
+
         col1.metric("Total Requests", f"{total_count:,}")
         col2.metric("✅ Allowed", f"{allow_count:,}")
         col3.metric("🟡 Masked", f"{mask_count:,}")
         col4.metric("🔴 Blocked", f"{block_count:,}")
+        col5.metric(
+            "⚡ Avg Latency",
+            f"{avg_total:.0f}ms" if avg_total is not None else "N/A"
+        )
+
+        st.markdown("---")
 
         # --- Charts Row ---
         chart_col1, chart_col2 = st.columns(2)
@@ -165,6 +239,7 @@ if page == "📊 Overview":
                     paper_bgcolor="rgba(0,0,0,0)",
                     plot_bgcolor="rgba(0,0,0,0)",
                     font_color="white",
+                    margin=dict(t=30, b=0),
                 )
                 st.plotly_chart(fig, use_container_width=True)
             else:
@@ -178,6 +253,7 @@ if page == "📊 Overview":
                     x="date",
                     y="count",
                     markers=True,
+                    color_discrete_sequence=["#00d26a"],
                 )
                 fig.update_layout(
                     paper_bgcolor="rgba(0,0,0,0)",
@@ -185,21 +261,38 @@ if page == "📊 Overview":
                     font_color="white",
                     xaxis_title="Date",
                     yaxis_title="Requests",
+                    margin=dict(t=30, b=0),
                 )
                 st.plotly_chart(fig, use_container_width=True)
             else:
                 st.info("No data in the last 7 days.")
 
+        # --- Latency Breakdown ---
+        st.subheader("⚡ Latency Breakdown (Averages)")
+        if not latencies.empty and latencies["avg_total_ms"].iloc[0] is not None:
+            lat_col1, lat_col2, lat_col3 = st.columns(3)
+            avg_det = float(latencies["avg_detection_ms"].iloc[0] or 0)
+            avg_llm = float(latencies["avg_llm_ms"].iloc[0] or 0)
+            avg_tot = float(latencies["avg_total_ms"].iloc[0] or 0)
+            lat_col1.metric("Detection Pipeline", f"{avg_det:.1f}ms")
+            lat_col2.metric("LLM Backend", f"{avg_llm:.1f}ms")
+            lat_col3.metric("Total End-to-End", f"{avg_tot:.1f}ms")
+        else:
+            st.info("No latency data yet.")
+
+        st.markdown("---")
+
         # --- Top Redaction Types ---
-        st.subheader("Top Redaction Types")
+        st.subheader("🔍 Top Redaction Types")
         if not redactions.empty:
-            # Aggregate redaction counts across all records
-            all_redaction_counts = {}
+            all_redaction_counts: dict = {}
             for _, row in redactions.iterrows():
-                for entity_type, count in row["input_redactions"].items():
-                    all_redaction_counts[entity_type] = (
-                        all_redaction_counts.get(entity_type, 0) + count
-                    )
+                rd = row["input_redactions"]
+                if isinstance(rd, dict):
+                    for entity_type, count in rd.items():
+                        all_redaction_counts[entity_type] = (
+                            all_redaction_counts.get(entity_type, 0) + count
+                        )
 
             if all_redaction_counts:
                 redaction_df = pd.DataFrame(
@@ -214,12 +307,14 @@ if page == "📊 Overview":
                     orientation="h",
                     color="Count",
                     color_continuous_scale="Reds",
+                    text="Count",
                 )
                 fig.update_layout(
                     paper_bgcolor="rgba(0,0,0,0)",
                     plot_bgcolor="rgba(0,0,0,0)",
                     font_color="white",
                     showlegend=False,
+                    margin=dict(t=10, b=0),
                 )
                 st.plotly_chart(fig, use_container_width=True)
             else:
@@ -227,8 +322,26 @@ if page == "📊 Overview":
         else:
             st.info("No redactions recorded yet.")
 
+        # --- Recent Blocked Requests ---
+        if not recent_blocks.empty:
+            st.markdown("---")
+            st.subheader("🔴 Recent Blocked Requests")
+            recent_blocks["created_at"] = pd.to_datetime(
+                recent_blocks["created_at"]
+            ).dt.strftime("%Y-%m-%d %H:%M:%S")
+            st.dataframe(
+                recent_blocks[["created_at", "user_id", "request_id", "reasons"]],
+                use_container_width=True,
+                column_config={
+                    "created_at": "Time",
+                    "user_id": "User",
+                    "request_id": "Request ID",
+                    "reasons": "Reasons",
+                },
+            )
+
     except Exception as e:
-        st.error(f"Database connection error: {e}")
+        st.error(f"Database error: {e}")
         st.info("Make sure PostgreSQL is running and the database is initialized.")
 
 
@@ -239,8 +352,13 @@ elif page == "📋 Request Log":
     st.title("📋 Request Log")
     st.markdown("Browse and filter all audit records.")
 
+    if not db_ok:
+        st.error("⚠️ Cannot connect to the database. Make sure PostgreSQL is running.")
+        st.stop()
+
     # --- Filters ---
-    filter_col1, filter_col2, filter_col3, filter_col4 = st.columns(4)
+    filter_col1, filter_col2, filter_col3 = st.columns(3)
+    filter_col4, filter_col5, filter_col6 = st.columns(3)
 
     with filter_col1:
         decision_filter = st.multiselect(
@@ -249,79 +367,134 @@ elif page == "📋 Request Log":
             default=["ALLOW", "MASK", "BLOCK"],
         )
     with filter_col2:
-        user_filter = st.text_input("User ID", "")
+        user_filter = st.text_input("User ID (partial match)", "")
     with filter_col3:
-        model_filter = st.text_input("Model", "")
+        model_filter = st.text_input("Model (partial match)", "")
+
     with filter_col4:
+        date_from = st.date_input(
+            "From date",
+            value=datetime.now().date() - timedelta(days=30),
+        )
+    with filter_col5:
+        date_to = st.date_input(
+            "To date",
+            value=datetime.now().date(),
+        )
+    with filter_col6:
         limit = st.number_input("Max rows", value=100, min_value=10, max_value=1000)
 
     try:
-        # Build query
-        query_parts = ["SELECT request_id, created_at, user_id, model, input_decision,"]
-        query_parts.append(
-            "output_decision, input_redactions, total_latency_ms"
-        )
-        query_parts.append("FROM audit_log")
-        query_parts.append("WHERE input_decision = ANY(:decisions)")
+        # Build parameterized query
+        conditions = [
+            "input_decision = ANY(:decisions)",
+            "DATE(created_at) >= :date_from",
+            "DATE(created_at) <= :date_to",
+        ]
+        params: dict = {
+            "decisions": decision_filter or ["ALLOW", "MASK", "BLOCK"],
+            "date_from": date_from,
+            "date_to": date_to,
+            "limit": int(limit),
+        }
 
-        params = {"decisions": decision_filter, "limit": limit}
+        if user_filter.strip():
+            conditions.append("user_id ILIKE :user_id")
+            params["user_id"] = f"%{user_filter.strip()}%"
 
-        if user_filter:
-            query_parts.append("AND user_id ILIKE :user_id")
-            params["user_id"] = f"%{user_filter}%"
+        if model_filter.strip():
+            conditions.append("model ILIKE :model")
+            params["model"] = f"%{model_filter.strip()}%"
 
-        if model_filter:
-            query_parts.append("AND model ILIKE :model")
-            params["model"] = f"%{model_filter}%"
-
-        query_parts.append("ORDER BY created_at DESC")
-        query_parts.append("LIMIT :limit")
-
-        query = text(" ".join(query_parts))
+        where_clause = " AND ".join(conditions)
+        query = text(f"""
+            SELECT
+                request_id,
+                created_at,
+                user_id,
+                model,
+                input_decision,
+                output_decision,
+                input_redactions,
+                total_latency_ms,
+                detection_latency_ms
+            FROM audit_log
+            WHERE {where_clause}
+            ORDER BY created_at DESC
+            LIMIT :limit
+        """)
 
         with get_connection() as conn:
             df = pd.read_sql(query, conn, params=params)
 
         if not df.empty:
-            # Format the dataframe
             df["created_at"] = pd.to_datetime(df["created_at"]).dt.strftime(
                 "%Y-%m-%d %H:%M:%S"
             )
             df["latency"] = df["total_latency_ms"].apply(
-                lambda x: f"{x}ms" if x else "N/A"
+                lambda x: f"{x}ms" if x is not None else "N/A"
+            )
+            df["detection"] = df["detection_latency_ms"].apply(
+                lambda x: f"{x}ms" if x is not None else "N/A"
             )
 
-            # Display count
-            st.markdown(f"**Showing {len(df)} records**")
+            # Summary row
+            summary_col1, summary_col2, summary_col3 = st.columns(3)
+            summary_col1.markdown(f"**{len(df)} records** found")
+            if "total_latency_ms" in df.columns and df["total_latency_ms"].notna().any():
+                avg_lat = df["total_latency_ms"].mean()
+                summary_col2.markdown(f"**Avg latency:** {avg_lat:.0f}ms")
+            block_pct = (
+                (df["input_decision"] == "BLOCK").sum() / len(df) * 100
+            )
+            summary_col3.markdown(f"**Block rate:** {block_pct:.1f}%")
 
-            # Display table
+            st.markdown("---")
+
+            styled_df = df[[
+                "created_at",
+                "user_id",
+                "model",
+                "input_decision",
+                "output_decision",
+                "input_redactions",
+                "latency",
+                "detection",
+                "request_id",
+            ]]
+
             st.dataframe(
-                df[
-                    [
-                        "created_at",
-                        "user_id",
-                        "model",
-                        "input_decision",
-                        "output_decision",
-                        "input_redactions",
-                        "latency",
-                        "request_id",
-                    ]
-                ],
+                styled_df,
                 use_container_width=True,
                 column_config={
-                    "created_at": "Time",
-                    "user_id": "User",
-                    "model": "Model",
+                    "created_at": st.column_config.TextColumn("Time", width="medium"),
+                    "user_id": st.column_config.TextColumn("User", width="small"),
+                    "model": st.column_config.TextColumn("Model", width="small"),
                     "input_decision": st.column_config.TextColumn(
-                        "Input Decision"
+                        "Input Decision", width="small"
                     ),
-                    "output_decision": "Output Decision",
-                    "input_redactions": "Redactions",
-                    "latency": "Latency",
-                    "request_id": "Request ID",
+                    "output_decision": st.column_config.TextColumn(
+                        "Output Decision", width="small"
+                    ),
+                    "input_redactions": st.column_config.TextColumn(
+                        "Redactions", width="medium"
+                    ),
+                    "latency": st.column_config.TextColumn("Total Latency", width="small"),
+                    "detection": st.column_config.TextColumn("Detection", width="small"),
+                    "request_id": st.column_config.TextColumn("Request ID", width="large"),
                 },
+                height=500,
             )
+
+            # CSV export
+            csv = styled_df.to_csv(index=False)
+            st.download_button(
+                label="⬇️ Export as CSV",
+                data=csv,
+                file_name=f"sentinellm_audit_{date_from}_{date_to}.csv",
+                mime="text/csv",
+            )
+
         else:
             st.info("No records found matching the filters.")
 
@@ -334,20 +507,30 @@ elif page == "📋 Request Log":
 # ============================================================
 elif page == "🔍 Request Detail":
     st.title("🔍 Request Detail")
-    st.markdown("Inspect individual audit records in detail.")
+    st.markdown("Inspect individual audit records in full detail.")
 
-    # Get request IDs for selection
-    request_id_input = st.text_input(
-        "Enter Request ID (UUID)", placeholder="e.g. 550e8400-e29b-41d4-a716-446655440000"
-    )
+    if not db_ok:
+        st.error("⚠️ Cannot connect to the database. Make sure PostgreSQL is running.")
+        st.stop()
 
-    if not request_id_input:
-        # Show recent requests for selection
+    # Input + recent selector side by side
+    input_col, recent_col = st.columns([2, 1])
+
+    with input_col:
+        request_id_input = st.text_input(
+            "Enter Request ID (UUID)",
+            placeholder="e.g. 550e8400-e29b-41d4-a716-446655440000",
+        )
+
+    with recent_col:
         try:
             with get_connection() as conn:
                 recent = pd.read_sql(
                     text("""
-                        SELECT request_id, created_at, user_id, input_decision
+                        SELECT
+                            request_id::text,
+                            created_at,
+                            input_decision
                         FROM audit_log
                         ORDER BY created_at DESC
                         LIMIT 20
@@ -356,123 +539,192 @@ elif page == "🔍 Request Detail":
                 )
 
             if not recent.empty:
-                st.markdown("**Or select a recent request:**")
-                selected = st.selectbox(
-                    "Recent requests",
-                    recent["request_id"].astype(str).tolist(),
-                    format_func=lambda x: f"{x[:8]}... — {recent[recent['request_id'].astype(str) == x]['input_decision'].values[0]}",
-                )
-                request_id_input = selected
-        except Exception:
-            pass
-
-    if request_id_input:
-        try:
-            with get_connection() as conn:
-                detail = pd.read_sql(
-                    text("SELECT * FROM audit_log WHERE request_id = :rid"),
-                    conn,
-                    params={"rid": request_id_input},
-                )
-
-            if not detail.empty:
-                row = detail.iloc[0]
-
-                # --- Header ---
-                decision_emoji = {
-                    "ALLOW": "✅",
-                    "MASK": "🟡",
-                    "BLOCK": "🔴",
-                }.get(row["input_decision"], "❓")
-
-                st.subheader(
-                    f"{decision_emoji} Request {str(row['request_id'])[:8]}..."
-                )
-
-                # --- Info Grid ---
-                info_col1, info_col2, info_col3 = st.columns(3)
-
-                with info_col1:
-                    st.markdown("**Request ID:**")
-                    st.code(str(row["request_id"]))
-                    st.markdown("**User:**")
-                    st.write(row["user_id"])
-                    st.markdown("**Model:**")
-                    st.write(row["model"])
-
-                with info_col2:
-                    st.markdown("**Input Decision:**")
-                    st.write(f"{decision_emoji} {row['input_decision']}")
-                    st.markdown("**Output Decision:**")
-                    st.write(row["output_decision"] or "N/A")
-                    st.markdown("**Policy:**")
-                    st.write(row["policy_id"])
-
-                with info_col3:
-                    st.markdown("**Detection Latency:**")
-                    st.write(f"{row['detection_latency_ms']}ms")
-                    st.markdown("**LLM Latency:**")
-                    st.write(
-                        f"{row['llm_latency_ms']}ms"
-                        if row["llm_latency_ms"]
-                        else "N/A (blocked)"
+                options = recent["request_id"].tolist()
+                labels = {
+                    row["request_id"]: (
+                        f"{row['request_id'][:8]}... — "
+                        f"{row['input_decision']} — "
+                        f"{pd.to_datetime(row['created_at']).strftime('%m/%d %H:%M')}"
                     )
-                    st.markdown("**Total Latency:**")
-                    st.write(f"{row['total_latency_ms']}ms")
-
-                st.markdown("---")
-
-                # --- Reasons ---
-                st.subheader("📝 Reasons")
-                reasons = row["reasons"]
-                if reasons:
-                    for reason in reasons:
-                        st.markdown(f"- {reason}")
-                else:
-                    st.write("No findings — request allowed.")
-
-                # --- Redaction Counts ---
-                redact_col1, redact_col2 = st.columns(2)
-
-                with redact_col1:
-                    st.subheader("📊 Input Redactions")
-                    input_redactions = row["input_redactions"]
-                    if input_redactions:
-                        for entity_type, count in input_redactions.items():
-                            st.write(f"- **{entity_type}**: {count}")
-                    else:
-                        st.write("None")
-
-                with redact_col2:
-                    st.subheader("📊 Output Redactions")
-                    output_redactions = row["output_redactions"]
-                    if output_redactions:
-                        for entity_type, count in output_redactions.items():
-                            st.write(f"- **{entity_type}**: {count}")
-                    else:
-                        st.write("None")
-
-                st.markdown("---")
-
-                # --- Redacted Content ---
-                st.subheader("📄 Redacted Prompt")
-                st.code(row["prompt_redacted"], language="text")
-
-                if row["response_redacted"]:
-                    st.subheader("📄 Redacted Response")
-                    st.code(row["response_redacted"], language="text")
-                else:
-                    st.info("No response (request was blocked).")
-
-                # --- Prompt Hash ---
-                st.subheader("🔐 Verification")
-                st.markdown(f"**Prompt Hash (SHA-256):** `{row['prompt_hash']}`")
-                st.markdown(
-                    f"**Created At:** {row['created_at']}"
+                    for _, row in recent.iterrows()
+                }
+                selected = st.selectbox(
+                    "Or pick a recent request",
+                    options=[""] + options,
+                    format_func=lambda x: "Select..." if x == "" else labels.get(x, x),
                 )
+                if selected:
+                    request_id_input = selected
+        except Exception:
+            st.caption("Could not load recent requests.")
 
+    if not request_id_input:
+        st.info("Enter a Request ID above or pick one from the dropdown to inspect it.")
+        st.stop()
+
+    try:
+        with get_connection() as conn:
+            detail = pd.read_sql(
+                text("SELECT * FROM audit_log WHERE request_id::text = :rid"),
+                conn,
+                params={"rid": str(request_id_input).strip()},
+            )
+
+        if detail.empty:
+            st.warning("No record found for that Request ID.")
+            st.stop()
+
+        row = detail.iloc[0]
+
+        # --- Header ---
+        decision_emoji = {"ALLOW": "✅", "MASK": "🟡", "BLOCK": "🔴"}.get(
+            row["input_decision"], "❓"
+        )
+        decision_color = {"ALLOW": "#00d26a", "MASK": "#f9a825", "BLOCK": "#ff4444"}.get(
+            row["input_decision"], "white"
+        )
+
+        st.markdown(
+            f"<h2>{decision_emoji} Request "
+            f"<code>{str(row['request_id'])[:8]}...</code> &nbsp;"
+            f"<span style='color:{decision_color};font-size:18px;'>"
+            f"{row['input_decision']}</span></h2>",
+            unsafe_allow_html=True,
+        )
+
+        st.markdown("---")
+
+        # --- Info Grid ---
+        info_col1, info_col2, info_col3 = st.columns(3)
+
+        with info_col1:
+            st.markdown("**🆔 Request ID**")
+            st.code(str(row["request_id"]), language=None)
+            st.markdown("**👤 User**")
+            st.write(row.get("user_id") or "anonymous")
+            st.markdown("**🤖 Model**")
+            st.write(row.get("model") or "N/A")
+
+        with info_col2:
+            st.markdown("**📥 Input Decision**")
+            st.markdown(
+                f"<span style='color:{decision_color};font-size:16px;font-weight:bold;'>"
+                f"{decision_emoji} {row['input_decision']}</span>",
+                unsafe_allow_html=True,
+            )
+            st.markdown("**📤 Output Decision**")
+            out_dec = row.get("output_decision") or "N/A"
+            out_emoji = {"ALLOW": "✅", "MASK": "🟡", "BLOCK": "🔴"}.get(out_dec, "")
+            st.write(f"{out_emoji} {out_dec}")
+            st.markdown("**📋 Policy**")
+            st.write(row.get("policy_id") or "default")
+
+        with info_col3:
+            st.markdown("**⚡ Detection Latency**")
+            det_ms = row.get("detection_latency_ms")
+            st.write(f"{det_ms}ms" if det_ms is not None else "N/A")
+            st.markdown("**🧠 LLM Latency**")
+            llm_ms = row.get("llm_latency_ms")
+            st.write(f"{llm_ms}ms" if llm_ms is not None else "N/A (blocked)")
+            st.markdown("**🕐 Total Latency**")
+            tot_ms = row.get("total_latency_ms")
+            st.write(f"{tot_ms}ms" if tot_ms is not None else "N/A")
+
+        st.markdown("---")
+
+        # --- Latency bar chart ---
+        if det_ms is not None and tot_ms is not None:
+            lat_data = pd.DataFrame({
+                "Stage": ["Detection Pipeline", "LLM Backend", "Other"],
+                "ms": [
+                    det_ms or 0,
+                    llm_ms or 0,
+                    max(0, (tot_ms or 0) - (det_ms or 0) - (llm_ms or 0)),
+                ],
+            })
+            fig = px.bar(
+                lat_data,
+                x="ms",
+                y="Stage",
+                orientation="h",
+                color="Stage",
+                color_discrete_sequence=["#00d26a", "#4fc3f7", "#f9a825"],
+                title="Latency Breakdown",
+            )
+            fig.update_layout(
+                paper_bgcolor="rgba(0,0,0,0)",
+                plot_bgcolor="rgba(0,0,0,0)",
+                font_color="white",
+                showlegend=False,
+                height=200,
+                margin=dict(t=40, b=0),
+            )
+            st.plotly_chart(fig, use_container_width=True)
+
+        # --- Findings / Reasons ---
+        st.subheader("📝 Findings")
+        reasons = row.get("reasons")
+        if reasons:
+            if isinstance(reasons, list):
+                for r in reasons:
+                    st.markdown(f"- {r}")
             else:
-                st.warning("No record found for that Request ID.")
+                st.write(reasons)
+        else:
+            st.success("No findings — request passed through clean.")
 
-        except Exception as e:
-            st.error(f"Error loading request detail: {e}")
+        # --- Redaction Counts ---
+        redact_col1, redact_col2 = st.columns(2)
+
+        with redact_col1:
+            st.subheader("📊 Input Redactions")
+            input_redactions = row.get("input_redactions")
+            if input_redactions and isinstance(input_redactions, dict):
+                for entity_type, count in input_redactions.items():
+                    st.markdown(f"- **{entity_type}**: {count}")
+            else:
+                st.write("None")
+
+        with redact_col2:
+            st.subheader("📊 Output Redactions")
+            output_redactions = row.get("output_redactions")
+            if output_redactions and isinstance(output_redactions, dict):
+                for entity_type, count in output_redactions.items():
+                    st.markdown(f"- **{entity_type}**: {count}")
+            else:
+                st.write("None")
+
+        st.markdown("---")
+
+        # --- Redacted Content ---
+        st.subheader("📄 Redacted Prompt")
+        prompt = row.get("prompt_redacted")
+        if prompt:
+            st.code(prompt, language="text")
+        else:
+            st.info("No prompt stored.")
+
+        st.subheader("📄 Redacted Response")
+        response = row.get("response_redacted")
+        if response:
+            st.code(response, language="text")
+        else:
+            st.info(
+                "No response stored — request was blocked before reaching the LLM."
+                if row["input_decision"] == "BLOCK"
+                else "No response stored."
+            )
+
+        # --- Verification ---
+        st.markdown("---")
+        st.subheader("🔐 Verification")
+        ver_col1, ver_col2 = st.columns(2)
+        with ver_col1:
+            st.markdown(f"**Prompt Hash (SHA-256):**")
+            st.code(row.get("prompt_hash") or "N/A", language=None)
+        with ver_col2:
+            st.markdown(f"**Created At:**")
+            st.write(str(row.get("created_at", "N/A")))
+
+    except Exception as e:
+        st.error(f"Error loading request detail: {e}")

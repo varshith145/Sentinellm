@@ -3,6 +3,9 @@ Evaluation script for the SentinelLM semantic NER model.
 
 Runs the trained model against the held-out test set and produces
 a detailed evaluation report per PRD Section 9.6.
+
+Uses the pre-computed input_ids and labels from the dataset directly,
+avoiding re-tokenization (which caused word_id misalignment in v1).
 """
 
 import json
@@ -16,7 +19,7 @@ from seqeval.metrics import (
     precision_score,
     recall_score,
 )
-from transformers import AutoModelForTokenClassification, AutoTokenizer
+from transformers import AutoModelForTokenClassification
 
 # --- Config ---
 MODEL_PATH = "./model/trained"
@@ -34,7 +37,6 @@ def main():
 
     # --- Load model ---
     print(f"\nLoading model from: {MODEL_PATH}")
-    tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH)
     model = AutoModelForTokenClassification.from_pretrained(MODEL_PATH)
     model.eval()
 
@@ -45,65 +47,74 @@ def main():
     print(f"  Test examples: {len(test_data)}")
 
     # --- Evaluate ---
+    # Use the stored input_ids and labels directly — no re-tokenization.
+    # The labels array has -100 at positions for [CLS], [SEP], [PAD] and
+    # continuation subword tokens; we skip those when building sequences.
     print("\nRunning evaluation...")
     all_true = []
     all_pred = []
+    pred_counts = {label: 0 for label in LABEL_LIST}
 
     for example in test_data:
-        tokens = example["tokens"]
-        true_labels_ids = example["labels"]
-
-        inputs = tokenizer(
-            tokens,
-            is_split_into_words=True,
-            return_tensors="pt",
-            truncation=True,
-            max_length=512,
-        )
+        input_ids = torch.tensor([example["input_ids"]])
+        attention_mask = torch.tensor([example["attention_mask"]])
+        stored_labels = example["labels"]   # list of ints, -100 where ignored
 
         with torch.no_grad():
-            outputs = model(**inputs)
+            outputs = model(input_ids=input_ids, attention_mask=attention_mask)
 
-        predictions = torch.argmax(outputs.logits, dim=2)[0].tolist()
-        word_ids = inputs.word_ids()
+        pred_ids = torch.argmax(outputs.logits, dim=2)[0].tolist()
 
-        true_labels = []
-        pred_labels = []
-        prev_word_id = None
+        true_seq = []
+        pred_seq = []
 
-        for idx, word_id in enumerate(word_ids):
-            if word_id is None:
+        for pred_id, true_id in zip(pred_ids, stored_labels):
+            if true_id == -100:
+                # [CLS], [SEP], [PAD], or subword continuation — skip
                 continue
-            if word_id != prev_word_id:
-                if word_id < len(true_labels_ids):
-                    true_label_id = true_labels_ids[word_id]
-                    # Skip -100 labels
-                    if true_label_id != -100:
-                        true_labels.append(LABEL_LIST[true_label_id])
-                        pred_labels.append(LABEL_LIST[predictions[idx]])
-            prev_word_id = word_id
+            true_seq.append(LABEL_LIST[true_id])
+            pred_seq.append(LABEL_LIST[pred_id])
+            pred_counts[LABEL_LIST[pred_id]] += 1
 
-        if true_labels:
-            all_true.append(true_labels)
-            all_pred.append(pred_labels)
+        if true_seq:
+            all_true.append(true_seq)
+            all_pred.append(pred_seq)
+
+    # --- Prediction distribution (sanity check) ---
+    print("\nPrediction distribution (should NOT be all-O):")
+    total_preds = sum(pred_counts.values())
+    for label, count in pred_counts.items():
+        pct = count / total_preds * 100 if total_preds > 0 else 0
+        marker = " ← good" if label != "O" and count > 0 else ""
+        print(f"  {label:12s}: {count:4d} ({pct:.1f}%){marker}")
+
+    if all(v == 0 for k, v in pred_counts.items() if k != "O"):
+        print("\n  ⚠️  Model is predicting all-O — class weighting may need tuning.")
+    else:
+        print("\n  ✅ Model is predicting non-O labels — training worked!")
 
     # --- Report ---
     print("\n" + "=" * 60)
     print("Classification Report:")
     print("=" * 60)
-    report = classification_report(all_true, all_pred)
-    print(report)
 
-    metrics = {
-        "precision": precision_score(all_true, all_pred),
-        "recall": recall_score(all_true, all_pred),
-        "f1": f1_score(all_true, all_pred),
-        "num_test_examples": len(all_true),
-    }
+    if not all_true:
+        print("No valid examples to evaluate.")
+        metrics = {"precision": 0.0, "recall": 0.0, "f1": 0.0, "num_test_examples": 0}
+    else:
+        report = classification_report(all_true, all_pred, zero_division=0)
+        print(report)
 
-    print(f"Overall Precision: {metrics['precision']:.4f}")
-    print(f"Overall Recall:    {metrics['recall']:.4f}")
-    print(f"Overall F1:        {metrics['f1']:.4f}")
+        metrics = {
+            "precision": precision_score(all_true, all_pred, zero_division=0),
+            "recall": recall_score(all_true, all_pred, zero_division=0),
+            "f1": f1_score(all_true, all_pred, zero_division=0),
+            "num_test_examples": len(all_true),
+        }
+
+        print(f"Overall Precision: {metrics['precision']:.4f}")
+        print(f"Overall Recall:    {metrics['recall']:.4f}")
+        print(f"Overall F1:        {metrics['f1']:.4f}")
 
     # --- Save metrics ---
     os.makedirs(os.path.dirname(OUTPUT_PATH), exist_ok=True)

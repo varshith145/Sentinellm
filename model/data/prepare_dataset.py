@@ -17,7 +17,9 @@ from datasets import Dataset, DatasetDict
 from transformers import AutoTokenizer
 
 # --- Config ---
-MODEL_NAME = "distilbert-base-uncased"
+# Uses local base model so Docker doesn't need internet access.
+# Run model/download_base_model.py once first to populate this directory.
+MODEL_NAME = "./model/base_model"
 OUTPUT_DIR = Path(__file__).parent / "processed"
 SYNTHETIC_PATH = Path(__file__).parent / "synthetic_obfuscated.jsonl"
 HARD_NEGATIVES_PATH = Path(__file__).parent / "hard_negatives.jsonl"
@@ -154,17 +156,25 @@ def prepare_dataset():
             all_labels.append([LABEL2ID.get(l, 0) for l in labels])
         print(f"  Loaded {len(synthetic)} synthetic examples")
 
-    # --- Load hard negatives ---
+        # Oversampling removed — dataset is now large enough (500+ examples)
+        # that duplicating causes the model to memorize rather than generalize,
+        # resulting in artificially inflated F1=1.0 on the test split.
+
+    # --- Load hard negatives (capped to avoid drowning out PII signal) ---
+    # Loading all 154 negatives caused the model to predict all-O (F1=0).
+    # Cap at 40 — enough to prevent false positives, not so many that the
+    # model forgets PII/SECRET labels exist.
+    MAX_NEGATIVES = 80  # raised from 40 — more positives now so we can afford more negatives
     if HARD_NEGATIVES_PATH.exists():
         print(f"Loading hard negatives from {HARD_NEGATIVES_PATH}...")
-        negatives = load_jsonl(HARD_NEGATIVES_PATH)
+        negatives = load_jsonl(HARD_NEGATIVES_PATH)[:MAX_NEGATIVES]
         for example in negatives:
             tokens, labels = text_to_bio(example["text"], example["entities"])
             all_tokens.append(tokens)
             all_labels.append([LABEL2ID.get(l, 0) for l in labels])
-        print(f"  Loaded {len(negatives)} hard negative examples")
+        print(f"  Loaded {len(negatives)} hard negative examples (capped at {MAX_NEGATIVES})")
 
-    print(f"Total examples: {len(all_tokens)}")
+    print(f"Total examples: {len(all_tokens)} ({len(all_tokens) - len(negatives)} positive, {len(negatives)} negative)")
 
     # --- Tokenize and align labels ---
     print("Tokenizing and aligning labels...")
@@ -177,14 +187,14 @@ def prepare_dataset():
             tokens,
             is_split_into_words=True,
             truncation=True,
-            max_length=512,
+            max_length=128,   # reduced from 512 — PII examples are short, saves RAM
             padding="max_length",
         )
         word_ids = encoding.word_ids()
         token_labels = align_labels_with_tokens(labels, word_ids)
 
         # Pad labels to max_length
-        while len(token_labels) < 512:
+        while len(token_labels) < 128:
             token_labels.append(-100)
 
         tokenized_inputs.append(encoding)

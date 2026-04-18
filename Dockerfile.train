@@ -1,0 +1,32 @@
+# Training image for SentinelLM semantic NER model
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install build tools
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc g++ \
+    && rm -rf /var/lib/apt/lists/*
+
+# Step 1: Install PyTorch CPU separately using --extra-index-url
+# (--extra-index-url keeps PyPI available for all other packages)
+RUN pip install --no-cache-dir \
+    torch==2.2.0 \
+    --extra-index-url https://download.pytorch.org/whl/cpu
+
+# Step 2: Install HuggingFace stack from regular PyPI
+RUN pip install --no-cache-dir \
+    transformers==4.40.0 \
+    datasets==2.19.0 \
+    seqeval==1.2.2 \
+    numpy==1.26.4 \
+    accelerate==0.30.0
+
+# Copy source (includes model/base_model/ downloaded locally)
+COPY model/ ./model/
+
+# Tell HuggingFace to never try the internet — use local files only
+ENV TRANSFORMERS_OFFLINE=1
+ENV HF_DATASETS_OFFLINE=1
+
+CMD ["bash"]

@@ -91,12 +91,13 @@ class SemanticDetector(BaseDetector):
     def _detect_sync(self, text: str) -> list[Finding]:
         """Synchronous inference — runs in thread pool."""
         import torch
+        import torch.nn.functional as F
 
         inputs = self.tokenizer(
             text,
             return_tensors="pt",
             truncation=True,
-            max_length=512,
+            max_length=128,          # matches training max_length
             return_offsets_mapping=True,
         )
         offset_mapping = inputs.pop("offset_mapping")[0]
@@ -104,61 +105,82 @@ class SemanticDetector(BaseDetector):
         with torch.no_grad():
             outputs = self.model(**inputs)
 
-        predictions = torch.argmax(outputs.logits, dim=2)[0]
+        logits = outputs.logits[0]                      # (seq_len, num_labels)
+        probs = F.softmax(logits, dim=-1)               # real probabilities per token
+        predictions = torch.argmax(logits, dim=-1)      # (seq_len,)
 
         findings: list[Finding] = []
-        current_entity: str | None = None
-        current_start: int | None = None
-        current_end: int | None = None
+        current_entity = None
+        current_start = None
+        current_end = None
+        current_token_probs: list[float] = []
 
         for i, (pred, offset) in enumerate(zip(predictions, offset_mapping)):
             label = self.model.config.id2label[pred.item()]
             char_start = offset[0].item()
             char_end = offset[1].item()
+            token_prob = probs[i][pred.item()].item()   # softmax prob for predicted label
 
             # Skip special tokens ([CLS], [SEP], [PAD])
             if char_start == 0 and char_end == 0 and i > 0:
                 if current_entity:
-                    findings.append(
-                        self._make_finding(text, current_entity, current_start, current_end)
-                    )
+                    findings.append(self._make_finding(
+                        text, current_entity, current_start, current_end, current_token_probs
+                    ))
                     current_entity = None
+                    current_token_probs = []
                 continue
 
             if label.startswith("B-"):
-                # Save previous entity if exists
+                # Flush previous span
                 if current_entity:
-                    findings.append(
-                        self._make_finding(text, current_entity, current_start, current_end)
-                    )
-                current_entity = label[2:]  # "PII" or "SECRET"
+                    findings.append(self._make_finding(
+                        text, current_entity, current_start, current_end, current_token_probs
+                    ))
+                current_entity = label[2:]   # "PII" or "SECRET"
                 current_start = char_start
                 current_end = char_end
+                current_token_probs = [token_prob]
 
             elif label.startswith("I-") and current_entity:
                 current_end = char_end
+                current_token_probs.append(token_prob)
 
             else:
                 if current_entity:
-                    findings.append(
-                        self._make_finding(text, current_entity, current_start, current_end)
-                    )
+                    findings.append(self._make_finding(
+                        text, current_entity, current_start, current_end, current_token_probs
+                    ))
                     current_entity = None
+                    current_token_probs = []
 
-        # Don't forget the last entity
+        # Flush final span
         if current_entity:
-            findings.append(
-                self._make_finding(text, current_entity, current_start, current_end)
-            )
+            findings.append(self._make_finding(
+                text, current_entity, current_start, current_end, current_token_probs
+            ))
 
         return findings
 
     def _make_finding(
-        self, text: str, entity_label: str, start: int, end: int
+        self,
+        text: str,
+        entity_label: str,
+        start: int,
+        end: int,
+        token_probs: list[float],
     ) -> Finding:
-        """Create a Finding from a detected span."""
+        """
+        Create a Finding with confidence derived from actual model probabilities.
+
+        Confidence = mean softmax probability across all tokens in the span.
+        This gives genuinely calibrated scores — uncertain detections (e.g. a
+        cloud service name that superficially resembles a secret) will score
+        lower than clear-cut cases (explicit 'password is X' patterns).
+        """
         entity_type = _SEMANTIC_ENTITY_MAP.get(entity_label, EntityType.GENERIC_PII)
         category = _SEMANTIC_CATEGORY_MAP.get(entity_label, EntityCategory.PII)
+        confidence = round(sum(token_probs) / len(token_probs), 4) if token_probs else 0.5
 
         return Finding(
             entity_type=entity_type,
@@ -166,6 +188,6 @@ class SemanticDetector(BaseDetector):
             start=start,
             end=end,
             matched_text=text[start:end],
-            confidence=0.80,  # Semantic model default confidence
+            confidence=confidence,
             detector="semantic",
         )
