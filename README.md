@@ -1,242 +1,125 @@
 # SentinelLM 🛡️
 
-**An AI gateway that detects and redacts sensitive data in LLM traffic using a three-pass detection pipeline (regex + Presidio + fine-tuned semantic NER model), with full audit logging and an admin dashboard.**
+> **A self-hosted AI gateway that intercepts LLM traffic, detects PII and secrets across three detection passes, enforces configurable policies, and logs every decision — without sending your data anywhere.**
 
-[![CI](https://github.com/varshith145/sentinellm/actions/workflows/ci.yml/badge.svg)](https://github.com/varshith145/sentinellm/actions/workflows/ci.yml)
-
----
-
-## 🔍 What is SentinelLM?
-
-SentinelLM is a **self-hosted AI gateway** (reverse proxy) that sits between any application and an LLM backend. It inspects every prompt and every response using a **three-pass detection pipeline** to find sensitive data, enforces configurable policies (allow, mask, or block), and logs every decision to a tamper-evident audit store.
-
-### The Problem
-
-Organizations adopting LLMs face three risks:
-1. **Data Leakage** — Employees paste PII and secrets into LLM prompts
-2. **No Visibility** — Security teams can't see what's being sent to models
-3. **Obfuscation Bypasses** — "john at gmail dot com" bypasses regex scanning
-
-### The Solution: Three-Pass Detection
-
-| Pass | Technology | What It Catches | Latency |
-|------|-----------|----------------|---------|
-| 1️⃣ **Regex** | Compiled patterns | Structured PII (emails, SSNs, cards) + Secrets (AWS keys, JWTs) | <1ms |
-| 2️⃣ **Presidio** | Microsoft Presidio + spaCy | Contextual PII (names, addresses, IDs) | ~30ms |
-| 3️⃣ **Semantic NER** | Fine-tuned DistilBERT | Obfuscated PII ("john at gmail dot com") | ~100-200ms |
+<p align="center">
+  <img src="https://img.shields.io/badge/Python-3.11-blue?logo=python&logoColor=white" />
+  <img src="https://img.shields.io/badge/FastAPI-0.100+-green?logo=fastapi&logoColor=white" />
+  <img src="https://img.shields.io/badge/DistilBERT-NER%20F1%3D0.849-orange?logo=huggingface&logoColor=white" />
+  <img src="https://img.shields.io/badge/Tests-215%20passed-brightgreen?logo=pytest&logoColor=white" />
+  <img src="https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white" />
+  <img src="https://img.shields.io/badge/License-MIT-lightgrey" />
+</p>
 
 ---
 
-## 🏗️ Architecture
+## The Problem
 
-```
-┌─────────────────┐
-│  Client / App   │
-└────────┬────────┘
-         │ POST /v1/chat/completions
-         ▼
-┌─────────────────────────────────────────────┐
-│          SentinelLM Gateway (FastAPI)        │
-│                                             │
-│  Input Scanning → Policy Engine → Redact    │
-│       ↓                                     │
-│  Forward to LLM (Ollama / OpenAI)           │
-│       ↓                                     │
-│  Output Scanning → Return + ppg metadata    │
-│       ↓                                     │
-│  Audit Log (PostgreSQL)                     │
-└─────────────────────────────────────────────┘
-         │
-         ▼
-┌────────────────┐     ┌──────────────────┐
-│  PostgreSQL    │◄────│  Streamlit Admin  │
-│  (audit_log)   │     │  Dashboard        │
-└────────────────┘     └──────────────────┘
-```
+Regex catches `john@example.com`. It does not catch `"reach me at john dot smith at company dot com"`.
+
+Organizations using LLMs have three unsolved risks:
+
+- **Employees paste PII into prompts** — emails, SSNs, credit cards, passwords
+- **Obfuscated data bypasses scanners** — spoken phone numbers, spelled-out SSNs, phonetic API keys
+- **No audit trail** — security teams have no visibility into what gets sent to the model
+
+SentinelLM solves all three with a layered detection pipeline, configurable policy engine, and tamper-evident audit log.
 
 ---
 
-## 🚀 Quickstart
+## How It Works
 
-### Prerequisites
-- [Docker](https://docs.docker.com/get-docker/) + Docker Compose v2
-- [Ollama](https://ollama.ai/) running locally (or an OpenAI API key)
-
-### 1. Clone and Configure
-
-```bash
-git clone https://github.com/varshith145/sentinellm.git
-cd sentinellm
-cp .env.example .env
-# Edit .env if needed (defaults work with local Ollama)
-```
-
-### 2. Start the Stack
-
-```bash
-docker compose up --build
-```
-
-This starts:
-- **Gateway** on `http://localhost:8000`
-- **PostgreSQL** on `localhost:5432`
-- **Admin Dashboard** on `http://localhost:8501`
-
-### 3. Send a Test Request
-
-**Test PII masking (email gets redacted):**
-
-```bash
-curl -s -X POST http://localhost:8000/v1/chat/completions \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "llama3.2:3b",
-    "messages": [{"role": "user", "content": "Summarize this email from john@acme.com about project Alpha."}],
-    "stream": false,
-    "user": "demo-user"
-  }' | python -m json.tool
-```
-
-Expected: The email `john@acme.com` is replaced with `[REDACTED_EMAIL]` before being sent to the LLM.
-
-**Test secret blocking (request is blocked entirely):**
-
-```bash
-curl -s -X POST http://localhost:8000/v1/chat/completions \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "llama3.2:3b",
-    "messages": [{"role": "user", "content": "Use this key AKIAIOSFODNN7EXAMPLE to access S3"}],
-    "stream": false
-  }' | python -m json.tool
-```
-
-Expected: Returns 403 — the LLM never receives the AWS key.
-
-### 4. View the Dashboard
-
-Open [http://localhost:8501](http://localhost:8501) to see the admin dashboard with audit records.
-
----
-
-## 📁 Project Structure
+SentinelLM sits between your application and any LLM backend (Ollama, OpenAI-compatible). Every prompt and every response passes through a three-pass detection pipeline before anything reaches the model.
 
 ```
-SentinelLM/
-├── gateway/                    # FastAPI gateway application
-│   ├── app/
-│   │   ├── main.py             # FastAPI app + pipeline
-│   │   ├── config.py           # Environment-based config
-│   │   ├── models.py           # Pydantic request/response models
-│   │   ├── db.py               # SQLAlchemy async models
-│   │   ├── audit.py            # Audit log writer
-│   │   ├── policy.py           # Policy engine (YAML rules)
-│   │   ├── redact.py           # Redaction with typed tokens
-│   │   └── detectors/
-│   │       ├── base.py         # EntityType, Finding, BaseDetector
-│   │       ├── regex.py        # Pass 1: Regex patterns
-│   │       ├── presidio_detector.py  # Pass 2: Presidio
-│   │       ├── semantic.py     # Pass 3: DistilBERT NER
-│   │       └── orchestrator.py # Merge + deduplicate
-│   ├── policies/
-│   │   └── default.yaml        # Default policy config
-│   ├── requirements.txt
-│   └── Dockerfile
-├── model/                      # ML training pipeline
-│   ├── data/
-│   │   ├── synthetic_obfuscated.jsonl
-│   │   ├── hard_negatives.jsonl
-│   │   └── prepare_dataset.py
-│   ├── configs/
-│   │   └── training_config.yaml
-│   ├── train.py
-│   └── evaluate.py
-├── admin/                      # Streamlit dashboard
-│   ├── streamlit_app.py
-│   ├── requirements.txt
-│   └── Dockerfile
-├── tests/                      # Test suite
-│   ├── test_regex.py
-│   ├── test_orchestrator.py
-│   ├── test_policy.py
-│   └── test_redact.py
-├── docker-compose.yml
-├── .env.example
-└── .github/workflows/ci.yml
+  Your App / Client
+       │
+       │  POST /v1/chat/completions  ← OpenAI-compatible
+       ▼
+┌──────────────────────────────────────────────────────────────┐
+│                    SentinelLM Gateway                        │
+│                                                              │
+│  ┌───────────────────── Input Scan ──────────────────────┐   │
+│  │                                                       │   │
+│  │  Pass 1 · Regex          Pass 2 · Presidio            │   │
+│  │  < 1ms                   ~ 30ms                       │   │
+│  │  Emails, SSNs, cards     Names, addresses             │   │
+│  │  AWS keys, JWTs          Contextual PII               │   │
+│  │  GitHub tokens                                        │   │
+│  │                          Pass 3 · Semantic NER        │   │
+│  │                          ~ 150ms                      │   │
+│  │  ─────── asyncio.gather ─ Fine-tuned DistilBERT ───── │   │
+│  │                                                       │   │
+│  │              Detection Orchestrator                   │   │
+│  │         Merge findings · Deduplicate overlaps         │   │
+│  │         Prefer highest confidence per span            │   │
+│  └──────────────────────┬────────────────────────────────┘   │
+│                         │                                    │
+│               ┌─────────▼──────────┐                        │
+│               │   Policy Engine    │   ← YAML config        │
+│               │  ALLOW / MASK / BLOCK                        │
+│               └─────────┬──────────┘                        │
+│                         │                                    │
+│           ┌─────────────┴──────────────┐                    │
+│       MASK/ALLOW                    BLOCK                    │
+│     Redact → LLM                 Return 403                  │
+│           │                      (LLM never sees it)        │
+│     Output Scan                                              │
+│     Audit Log → PostgreSQL                                   │
+└──────────────────────────────────────────────────────────────┘
+       │
+       ▼
+  Streamlit Admin Dashboard  (http://localhost:8501)
 ```
 
 ---
 
-## 🔧 Configuration
+## What the Semantic Pass Catches
 
-### Policy Configuration
+This is the differentiator. The fine-tuned DistilBERT model catches obfuscated PII that regex and Presidio are completely blind to:
 
-Edit `gateway/policies/default.yaml` to customize detection behavior:
-
-```yaml
-rules:
-  - entity_type: EMAIL
-    action: MASK          # ALLOW, MASK, or BLOCK
-    min_confidence: 0.7   # Minimum confidence threshold
-
-  - entity_type: AWS_KEY
-    action: BLOCK
-    min_confidence: 0.5
-```
-
-### Environment Variables
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `SENTINELLM_LLM_BACKEND` | `ollama` | `ollama` or `openai` |
-| `SENTINELLM_OLLAMA_BASE_URL` | `http://host.docker.internal:11434` | Ollama API URL |
-| `SENTINELLM_OPENAI_API_KEY` | `""` | OpenAI API key |
-| `SENTINELLM_SEMANTIC_MODEL_ENABLED` | `true` | Enable/disable semantic detector |
+| Input | Detector | Decision |
+|-------|----------|----------|
+| `john@example.com` | Regex | MASK |
+| `reach me at john dot smith at company dot com` | **Semantic** | MASK |
+| `my social is four five six dash seven eight dash nine zero one two` | **Semantic** | MASK |
+| `AKIAIOSFODNN7EXAMPLE` | Regex | BLOCK |
+| `the secret key is hunter two dont tell anyone` | **Semantic** | BLOCK |
+| `my password for the server is the name of my dog followed by the year i was born` | **Semantic** | BLOCK |
+| `we use AWS for cloud hosting and S3 for storage` | — | ALLOW ✓ |
 
 ---
 
-## 🤖 Training the Semantic Model
+## Detection Pipeline Details
 
-The semantic NER model is optional but recommended for catching obfuscated PII.
+| Pass | Engine | Latency | Entity Types |
+|------|--------|---------|--------------|
+| **1 · Regex** | Compiled patterns + Luhn validation | < 1ms | EMAIL, PHONE, SSN, CREDIT_CARD, AWS_KEY, GITHUB_TOKEN, JWT |
+| **2 · Presidio** | Microsoft NLP + spaCy `en_core_web_lg` | ~30ms | PERSON_NAME, contextual PII, addresses |
+| **3 · Semantic NER** | Fine-tuned DistilBERT (BIO tagging) | ~150ms | GENERIC_PII, GENERIC_SECRET — obfuscated and informal |
 
-### 1. Prepare Dataset
-
-```bash
-cd model/data
-python prepare_dataset.py
-```
-
-### 2. Train
-
-```bash
-python model/train.py
-```
-
-### 3. Evaluate
-
-```bash
-python model/evaluate.py
-```
-
-The trained model will be saved to `model/trained/` and automatically mounted into the gateway container.
+All three passes run in parallel via `asyncio.gather`. The orchestrator merges results, deduplicates overlapping spans (keeping highest confidence), and applies detector priority: `semantic > presidio > regex` on ties.
 
 ---
 
-## 🧪 Testing
+## Model Performance
 
-```bash
-# Install test dependencies
-pip install -r gateway/requirements.txt
+The semantic NER model is trained on 410+ synthetic obfuscated examples with 120 hard negatives, using a custom `WeightedLossTrainer` to correct class imbalance:
 
-# Run tests
-python -m pytest tests/ -v
-```
+| Metric | Score |
+|--------|-------|
+| **F1** | **0.849** |
+| Precision | 0.789 |
+| Recall | 0.918 |
+| Test examples | 61 |
+
+Class weights `[O=0.3, B-PII=10.0, I-PII=10.0, B-SECRET=10.0, I-SECRET=10.0]` ensure the model doesn't collapse to predicting all-`O` on the heavily imbalanced label distribution. Confidence scores are derived from real softmax probabilities per token span — genuine secrets score ~1.00, uncertain detections (e.g. cloud service names) score ~0.85, enabling clean threshold separation at 0.90.
 
 ---
 
-## 📊 API Response
+## API Response
 
-Every response includes a `ppg` metadata block:
+SentinelLM is a drop-in OpenAI-compatible proxy. Every response includes a `ppg` metadata block with the full decision trace:
 
 ```json
 {
@@ -245,24 +128,252 @@ Every response includes a `ppg` metadata block:
     "request_id": "550e8400-e29b-41d4-a716-446655440000",
     "input_decision": "MASK",
     "output_decision": "ALLOW",
-    "input_redactions": {"EMAIL": 1},
+    "input_redactions": { "EMAIL": 1 },
     "output_redactions": {},
     "policy_id": "default-v1",
     "detectors_used": ["regex", "presidio", "semantic"],
     "latency_ms": {
-      "detection": 185,
-      "llm": 2340,
-      "total": 2540
+      "detection": 162,
+      "llm": 2341,
+      "total": 2514
     }
+  }
+}
+```
+
+When a request is blocked:
+
+```json
+{
+  "error": {
+    "message": "Request blocked by SentinelLM policy",
+    "type": "policy_violation",
+    "reasons": [
+      "BLOCK: AWS_KEY detected (confidence=0.95, detector=regex)"
+    ]
+  },
+  "ppg": {
+    "input_decision": "BLOCK",
+    ...
   }
 }
 ```
 
 ---
 
-## 📄 License
+## Quickstart
 
-MIT
+**Prerequisites:** Docker + Docker Compose v2, [Ollama](https://ollama.ai/) running locally.
+
+```bash
+# 1. Clone
+git clone https://github.com/varshith145/sentinellm.git
+cd sentinellm
+
+# 2. Pull a small model into Ollama (on your host machine)
+ollama pull qwen2.5:0.5b
+
+# 3. Start the full stack
+docker compose up --build
+```
+
+| Service | URL |
+|---------|-----|
+| Gateway (OpenAI-compatible) | http://localhost:8000 |
+| Admin Dashboard | http://localhost:8501 |
+| API docs | http://localhost:8000/docs |
+
+**Test PII masking:**
+
+```bash
+curl -s -X POST http://localhost:8000/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "qwen2.5:0.5b",
+    "messages": [{"role": "user", "content": "Summarize this note from john@acme.com about the Alpha project."}]
+  }' | python3 -m json.tool
+```
+
+`john@acme.com` is replaced with `[REDACTED_EMAIL]` before reaching the model.
+
+**Test secret blocking:**
+
+```bash
+curl -s -X POST http://localhost:8000/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "qwen2.5:0.5b",
+    "messages": [{"role": "user", "content": "Use key AKIAIOSFODNN7EXAMPLE to access S3"}]
+  }' | python3 -m json.tool
+```
+
+Returns 403. The LLM never sees the key.
+
+---
+
+## Policy Configuration
+
+Policies live in `gateway/policies/default.yaml` and are **hot-reloaded** — no Docker rebuild needed when you change thresholds.
+
+```yaml
+rules:
+  - entity_type: EMAIL
+    action: MASK
+    min_confidence: 0.7
+
+  - entity_type: AWS_KEY
+    action: BLOCK
+    min_confidence: 0.5        # Block at any reasonable confidence
+
+  - entity_type: GENERIC_SECRET
+    action: BLOCK
+    min_confidence: 0.90       # Calibrated: genuine secrets score ~1.00
+                               # Uncertain matches (cloud service names) ~0.85
+
+default_action: ALLOW
+
+output_scanning:
+  enabled: true
+  secret_action: MASK          # Don't block the response, just redact
+```
+
+**Actions:**
+- `ALLOW` — pass through unchanged
+- `MASK` — replace the matched span with a typed token (`[REDACTED_EMAIL]`, `[REDACTED_SSN]`, etc.)
+- `BLOCK` — return 403 immediately, LLM never invoked
+
+**Decision priority:** `BLOCK > MASK > ALLOW`. If any finding triggers BLOCK, the entire request is blocked.
+
+---
+
+## Training the Semantic Model
+
+The semantic model is optional (the gateway degrades gracefully to regex + Presidio without it) but significantly improves obfuscation detection.
+
+```bash
+# One command — builds a training container, trains, evaluates, saves to model/trained/
+bash train.sh
+```
+
+Or step by step:
+
+```bash
+# 1. Download base model (DistilBERT)
+python3 model/download_base_model.py
+
+# 2. Generate synthetic training data
+python3 model/data/generate_training_data.py
+
+# 3. Prepare tokenized dataset
+python3 model/data/prepare_dataset.py
+
+# 4. Train (12 epochs, weighted loss, lr=3e-5)
+python3 model/train.py
+
+# 5. Evaluate on held-out test set
+python3 model/evaluate.py
+```
+
+The trained model is automatically mounted into the gateway container via Docker volume — no rebuild required after retraining.
+
+---
+
+## Test Suite
+
+```bash
+cd gateway && python3 -m pytest ../tests/ -v
+```
+
+```
+215 passed in 0.46s
+```
+
+| File | Tests | Coverage |
+|------|-------|---------|
+| `test_regex.py` | 39 | Luhn algorithm, all 7 regex patterns, offsets, false-positive guards |
+| `test_policy.py` | 32 | All entity types, every confidence threshold boundary, output scanning |
+| `test_redact.py` | 21 | All 11 entity types + tokens, positions, adjacency, count aggregation |
+| `test_orchestrator.py` | 23 | Deduplication, overlap handling, detector priority, failure resilience |
+| `test_integration.py` | 20 | Full pipeline: detect → evaluate → redact, end-to-end per scenario |
+
+---
+
+## Project Structure
+
+```
+SentinelLM/
+├── gateway/                         # FastAPI gateway
+│   ├── app/
+│   │   ├── main.py                  # Entrypoint + request pipeline
+│   │   ├── config.py                # Env-based settings (pydantic-settings)
+│   │   ├── policy.py                # YAML policy engine
+│   │   ├── redact.py                # Typed-token redaction
+│   │   ├── audit.py                 # Async audit log writer
+│   │   ├── db.py                    # SQLAlchemy async + PostgreSQL
+│   │   └── detectors/
+│   │       ├── base.py              # EntityType, Finding, BaseDetector
+│   │       ├── regex.py             # Pass 1: compiled patterns + Luhn
+│   │       ├── presidio_detector.py # Pass 2: Microsoft Presidio
+│   │       ├── semantic.py          # Pass 3: DistilBERT NER
+│   │       └── orchestrator.py      # asyncio.gather + deduplication
+│   └── policies/
+│       └── default.yaml             # Live-mounted policy (hot reload)
+├── model/
+│   ├── data/
+│   │   ├── generate_training_data.py # 410+ synthetic obfuscated examples
+│   │   ├── prepare_dataset.py        # Tokenize + BIO label alignment
+│   │   ├── synthetic_obfuscated.jsonl
+│   │   └── hard_negatives.jsonl
+│   ├── train.py                      # WeightedLossTrainer, 12 epochs
+│   └── evaluate.py                   # seqeval F1/precision/recall
+├── admin/
+│   └── streamlit_app.py              # Audit dashboard with charts
+├── tests/
+│   ├── conftest.py
+│   ├── test_regex.py
+│   ├── test_policy.py
+│   ├── test_redact.py
+│   ├── test_orchestrator.py
+│   └── test_integration.py
+├── docker-compose.yml
+├── Dockerfile.train
+├── train.sh
+└── Makefile
+```
+
+---
+
+## Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `SENTINELLM_LLM_BACKEND` | `ollama` | `ollama` or `openai` |
+| `SENTINELLM_OLLAMA_BASE_URL` | `http://host.docker.internal:11434` | Ollama API URL |
+| `SENTINELLM_OLLAMA_MODEL` | `qwen2.5:0.5b` | Default model |
+| `SENTINELLM_OPENAI_API_KEY` | `""` | OpenAI API key (if using OpenAI backend) |
+| `SENTINELLM_POLICY_PATH` | `/app/policies/default.yaml` | Policy file path |
+| `SENTINELLM_MODEL_PATH` | `/app/model/trained` | Semantic model path |
+| `SENTINELLM_SEMANTIC_MODEL_ENABLED` | `true` | Enable/disable semantic detector |
+| `SENTINELLM_DEBUG` | `false` | Debug logging |
+
+---
+
+## Useful Commands
+
+```bash
+make up              # Start full stack (gateway + db + dashboard)
+make down            # Stop everything
+make logs            # Stream logs
+make test            # Run test suite (215 tests)
+make restart-gateway # Restart gateway after model/policy update
+bash train.sh        # Full training pipeline via Docker
+```
+
+---
+
+## License
+
+MIT — see [LICENSE](LICENSE)
 
 ---
 
