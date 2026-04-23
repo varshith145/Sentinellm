@@ -51,7 +51,7 @@ def sse_line(data: dict) -> str:
     return f"data: {json.dumps(data)}"
 
 
-def parse_sse_lines(raw_lines: list[str]) -> list[dict]:
+def parse_sse_lines(raw_lines: list) -> list:
     """
     Extract parsed JSON objects from a list of SSE lines.
     Skips lines that are not 'data: {...}' (e.g. empty lines, '[DONE]').
@@ -101,7 +101,13 @@ class TestSSEAssembly:
             "object": "chat.completion.chunk",
             "created": 1700000000,
             "model": "test-model",
-            "choices": [{"index": 0, "delta": {"role": "assistant"}, "finish_reason": None}],
+            "choices": [
+                {
+                    "index": 0,
+                    "delta": {"role": "assistant"},
+                    "finish_reason": None,
+                }
+            ],
         }
         content = chunk["choices"][0]["delta"].get("content") or ""
         assert content == ""
@@ -189,7 +195,11 @@ class TestSSEReEmissionClean:
 
     def test_ppg_not_on_earlier_chunks(self):
         """Only the last chunk gets ppg, not intermediate ones."""
-        chunks = [make_chunk("a"), make_chunk("b"), make_chunk("c", finish_reason="stop")]
+        chunks = [
+            make_chunk("a"),
+            make_chunk("b"),
+            make_chunk("c", finish_reason="stop"),
+        ]
         ppg = {"request_id": "xyz"}
         for i, c in enumerate(chunks):
             if i == len(chunks) - 1:
@@ -217,11 +227,11 @@ class TestSSEReEmissionRedacted:
 
     def _build_redacted_output(
         self,
-        original_chunks: list[dict],
+        original_chunks: list,
         redacted_text: str,
         ppg: dict,
         finish_reason: str = "stop",
-    ) -> list[str]:
+    ) -> list:
         """
         Simulate the redaction branch: collapse to one content chunk + one done chunk.
         Returns SSE lines as the generator would yield them.
@@ -236,14 +246,26 @@ class TestSSEReEmissionRedacted:
             "object": "chat.completion.chunk",
             "created": created,
             "model": model_name,
-            "choices": [{"index": 0, "delta": {"content": redacted_text}, "finish_reason": None}],
+            "choices": [
+                {
+                    "index": 0,
+                    "delta": {"content": redacted_text},
+                    "finish_reason": None,
+                }
+            ],
         }
         done_chunk = {
             "id": chunk_id,
             "object": "chat.completion.chunk",
             "created": created,
             "model": model_name,
-            "choices": [{"index": 0, "delta": {}, "finish_reason": finish_reason}],
+            "choices": [
+                {
+                    "index": 0,
+                    "delta": {},
+                    "finish_reason": finish_reason,
+                }
+            ],
             "ppg": ppg,
         }
         return [
@@ -254,15 +276,23 @@ class TestSSEReEmissionRedacted:
 
     def test_exactly_two_data_chunks_emitted(self):
         """Redacted stream emits exactly 2 data chunks + [DONE]."""
-        original = [make_chunk("my email is user@example.com"), make_chunk(finish_reason="stop")]
+        original = [
+            make_chunk("my email is user@example.com"),
+            make_chunk(finish_reason="stop"),
+        ]
         ppg = {"request_id": "r1", "input_decision": "ALLOW"}
-        lines = self._build_redacted_output(original, "my email is [REDACTED_EMAIL]", ppg)
+        lines = self._build_redacted_output(
+            original, "my email is [REDACTED_EMAIL]", ppg
+        )
         parsed = parse_sse_lines(lines)
         assert len(parsed) == 2
 
     def test_first_chunk_has_redacted_content(self):
         """First emitted chunk carries the redacted replacement text."""
-        original = [make_chunk("secret: ghp_ABC123"), make_chunk(finish_reason="stop")]
+        original = [
+            make_chunk("secret: ghp_ABC123"),
+            make_chunk(finish_reason="stop"),
+        ]
         ppg = {"request_id": "r2"}
         lines = self._build_redacted_output(original, "secret: [REDACTED_SECRET]", ppg)
         parsed = parse_sse_lines(lines)
@@ -280,7 +310,9 @@ class TestSSEReEmissionRedacted:
         """Done chunk has finish_reason='stop' (or from backend)."""
         original = [make_chunk("data")]
         ppg = {}
-        lines = self._build_redacted_output(original, "[REDACTED]", ppg, finish_reason="stop")
+        lines = self._build_redacted_output(
+            original, "[REDACTED]", ppg, finish_reason="stop"
+        )
         parsed = parse_sse_lines(lines)
         assert parsed[-1]["choices"][0]["finish_reason"] == "stop"
 
@@ -314,7 +346,7 @@ class TestSSEReEmissionRedacted:
 class TestStreamingErrorResponses:
     """Error conditions terminate stream with an error chunk + [DONE]."""
 
-    def _error_lines(self, message: str, error_type: str) -> list[str]:
+    def _error_lines(self, message: str, error_type: str) -> list:
         """Simulate what the generator yields on backend error."""
         err = json.dumps({"error": {"message": message, "type": error_type}})
         return [f"data: {err}", "data: [DONE]"]
