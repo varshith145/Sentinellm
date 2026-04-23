@@ -32,7 +32,7 @@ SentinelLM solves all three with a layered detection pipeline, configurable poli
 SentinelLM sits between your application and any LLM backend (Ollama, OpenAI-compatible). Every prompt and every response passes through a three-pass detection pipeline before anything reaches the model.
 
 ```
-  Your App / Client
+  App / Client
        │
        │  POST /v1/chat/completions  ← OpenAI-compatible
        ▼
