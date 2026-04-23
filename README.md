@@ -6,7 +6,7 @@
   <img src="https://img.shields.io/badge/Python-3.11-blue?logo=python&logoColor=white" />
   <img src="https://img.shields.io/badge/FastAPI-0.100+-green?logo=fastapi&logoColor=white" />
   <img src="https://img.shields.io/badge/DistilBERT-NER%20F1%3D0.849-orange?logo=huggingface&logoColor=white" />
-  <img src="https://img.shields.io/badge/Tests-215%20passed-brightgreen?logo=pytest&logoColor=white" />
+  <img src="https://img.shields.io/badge/Tests-244%20passed-brightgreen?logo=pytest&logoColor=white" />
   <img src="https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white" />
   <img src="https://img.shields.io/badge/License-MIT-lightgrey" />
 </p>
@@ -285,7 +285,7 @@ cd gateway && python3 -m pytest ../tests/ -v
 ```
 
 ```
-215 passed in 0.46s
+244 passed in 0.51s
 ```
 
 | File | Tests | Coverage |
@@ -295,6 +295,7 @@ cd gateway && python3 -m pytest ../tests/ -v
 | `test_redact.py` | 21 | All 11 entity types + tokens, positions, adjacency, count aggregation |
 | `test_orchestrator.py` | 23 | Deduplication, overlap handling, detector priority, failure resilience |
 | `test_integration.py` | 20 | Full pipeline: detect → evaluate → redact, end-to-end per scenario |
+| `test_streaming.py` | 29 | SSE chunk assembly, redacted re-emission, clean pass-through, error paths |
 
 ---
 
@@ -304,12 +305,13 @@ cd gateway && python3 -m pytest ../tests/ -v
 SentinelLM/
 ├── gateway/                         # FastAPI gateway
 │   ├── app/
-│   │   ├── main.py                  # Entrypoint + request pipeline
+│   │   ├── main.py                  # Entrypoint + request pipeline (streaming + non-streaming)
 │   │   ├── config.py                # Env-based settings (pydantic-settings)
 │   │   ├── policy.py                # YAML policy engine
 │   │   ├── redact.py                # Typed-token redaction
 │   │   ├── audit.py                 # Async audit log writer
 │   │   ├── db.py                    # SQLAlchemy async + PostgreSQL
+│   │   ├── metrics.py               # Prometheus counters, histograms, gauges
 │   │   └── detectors/
 │   │       ├── base.py              # EntityType, Finding, BaseDetector
 │   │       ├── regex.py             # Pass 1: compiled patterns + Luhn
@@ -334,7 +336,8 @@ SentinelLM/
 │   ├── test_policy.py
 │   ├── test_redact.py
 │   ├── test_orchestrator.py
-│   └── test_integration.py
+│   ├── test_integration.py
+│   └── test_streaming.py
 ├── docker-compose.yml
 ├── Dockerfile.train
 ├── train.sh
@@ -364,7 +367,7 @@ SentinelLM/
 make up              # Start full stack (gateway + db + dashboard)
 make down            # Stop everything
 make logs            # Stream logs
-make test            # Run test suite (215 tests)
+make test            # Run test suite (244 tests)
 make restart-gateway # Restart gateway after model/policy update
 bash train.sh        # Full training pipeline via Docker
 ```
