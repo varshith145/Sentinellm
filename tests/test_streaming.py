@@ -296,7 +296,9 @@ class TestSSEReEmissionRedacted:
         ppg = {"request_id": "r2"}
         lines = self._build_redacted_output(original, "secret: [REDACTED_SECRET]", ppg)
         parsed = parse_sse_lines(lines)
-        assert parsed[0]["choices"][0]["delta"]["content"] == "secret: [REDACTED_SECRET]"
+        assert (
+            parsed[0]["choices"][0]["delta"]["content"] == "secret: [REDACTED_SECRET]"
+        )
 
     def test_second_chunk_has_ppg(self):
         """Second (done) chunk carries the ppg metadata."""
