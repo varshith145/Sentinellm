@@ -22,13 +22,23 @@ from contextlib import asynccontextmanager
 
 import httpx
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
+from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 
 from app.audit import write_audit_record
 from app.config import settings
 from app.db import async_session_factory, close_db, init_db
 from app.detectors.orchestrator import DetectionOrchestrator
 from app.detectors.regex import RegexDetector
+from app.metrics import (
+    ACTIVE_DETECTORS,
+    BLOCKS_COUNTER,
+    DETECTION_COUNTER,
+    DETECTION_LATENCY,
+    LLM_LATENCY,
+    REQUEST_COUNTER,
+    REQUEST_LATENCY,
+)
 from app.models import (
     ChatCompletionRequest,
     PPGMetadata,
@@ -93,6 +103,9 @@ async def lifespan(app: FastAPI):
         f"Detection orchestrator ready with: {orchestrator.get_active_detectors()}"
     )
 
+    # Set active detectors gauge (fixed at startup)
+    ACTIVE_DETECTORS.set(len(orchestrator.get_active_detectors()))
+
     # Initialize policy engine
     policy_engine = PolicyEngine(policy_path=settings.policy_path)
     logger.info(f"Policy engine loaded: {policy_engine.policy_id}")
@@ -131,6 +144,25 @@ async def health():
         "detectors": orchestrator.get_active_detectors() if orchestrator else [],
         "policy_id": policy_engine.policy_id if policy_engine else None,
     }
+
+
+# --- Prometheus Metrics Endpoint ---
+
+
+@app.get("/metrics", include_in_schema=False)
+async def metrics():
+    """
+    Prometheus metrics endpoint.
+
+    Exposes counters and histograms for requests, detections, latency,
+    and active detectors. Scrape this with Prometheus every 15s.
+
+    Example metrics:
+      sentinellm_requests_total{decision="BLOCK"} 12
+      sentinellm_detections_total{entity_type="EMAIL",detector="regex"} 47
+      sentinellm_detection_latency_secs_bucket{le="0.1"} 230
+    """
+    return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
 
 # --- Main Chat Completions Endpoint ---
@@ -175,6 +207,14 @@ async def chat_completions(request: ChatCompletionRequest, raw_request: Request)
 
     detection_latency_ms = int((time.time() - detection_start) * 1000)
 
+    # Record detection latency and per-finding counters
+    DETECTION_LATENCY.observe(detection_latency_ms / 1000)
+    for finding in all_findings:
+        DETECTION_COUNTER.labels(
+            entity_type=finding.entity_type.value,
+            detector=finding.detector,
+        ).inc()
+
     # ─── Step 3: Policy decision ───
     input_decision = policy_engine.evaluate(all_findings)
 
@@ -202,6 +242,12 @@ async def chat_completions(request: ChatCompletionRequest, raw_request: Request)
     # ─── Step 5: Block or forward ───
     if input_decision.action == "BLOCK":
         total_latency_ms = int((time.time() - start_time) * 1000)
+
+        # Record block metrics
+        REQUEST_COUNTER.labels(decision="BLOCK").inc()
+        REQUEST_LATENCY.observe(total_latency_ms / 1000)
+        for finding in input_decision.findings:
+            BLOCKS_COUNTER.labels(entity_type=finding.entity_type.value).inc()
 
         # Write audit record
         async with async_session_factory() as session:
@@ -311,6 +357,7 @@ async def chat_completions(request: ChatCompletionRequest, raw_request: Request)
         )
 
     llm_latency_ms = int((time.time() - llm_start) * 1000)
+    LLM_LATENCY.observe(llm_latency_ms / 1000)
 
     # ─── Step 7: Output scanning ───
     output_redactions: dict[str, int] = {}
@@ -340,6 +387,10 @@ async def chat_completions(request: ChatCompletionRequest, raw_request: Request)
     response_redacted = "\n".join(
         c.get("message", {}).get("content", "") for c in llm_data.get("choices", [])
     )
+
+    # Record request outcome metrics
+    REQUEST_COUNTER.labels(decision=input_decision.action).inc()
+    REQUEST_LATENCY.observe(total_latency_ms / 1000)
 
     # ─── Step 8: Write audit record ───
     async with async_session_factory() as session:
