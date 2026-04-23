@@ -15,14 +15,16 @@ pipeline per PRD Section 7:
 9. Return response with ppg metadata
 """
 
+import json
 import logging
 import time
 import uuid
 from contextlib import asynccontextmanager
+from typing import Optional
 
 import httpx
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse, Response
+from fastapi.responses import JSONResponse, Response, StreamingResponse
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 
 from app.audit import write_audit_record
@@ -51,8 +53,8 @@ logger = logging.getLogger("sentinellm")
 logging.basicConfig(level=logging.INFO)
 
 # --- Global instances (initialized at startup) ---
-orchestrator: DetectionOrchestrator | None = None
-policy_engine: PolicyEngine | None = None
+orchestrator: Optional[DetectionOrchestrator] = None
+policy_engine: Optional[PolicyEngine] = None
 
 
 @asynccontextmanager
@@ -308,7 +310,7 @@ async def chat_completions(request: ChatCompletionRequest, raw_request: Request)
         m.model_dump(exclude_none=True) for m in sanitized_messages
     ]
 
-    # Determine backend URL
+    # Determine backend URL and auth headers
     if settings.llm_backend == "openai":
         backend_url = settings.openai_base_url
         headers = {
@@ -319,6 +321,200 @@ async def chat_completions(request: ChatCompletionRequest, raw_request: Request)
         backend_url = settings.ollama_base_url
         headers = {"Content-Type": "application/json"}
 
+    # ─── Streaming path ───────────────────────────────────────────
+    if request.stream:
+        # Capture variables needed inside the generator via closure
+        _detection_latency_ms = detection_latency_ms
+        _input_decision = input_decision
+        _input_redactions = input_redactions
+        _prompt_redacted = prompt_redacted
+
+        async def _stream_generator():
+            nonlocal llm_start
+
+            collected_chunks: list[dict] = []
+            assembled_content = ""
+            finish_reason = None  # type: Optional[str]
+
+            # ── Collect SSE chunks from LLM backend ──────────────
+            try:
+                async with httpx.AsyncClient() as client:
+                    async with client.stream(
+                        "POST",
+                        f"{backend_url}/v1/chat/completions",
+                        json=sanitized_payload,
+                        headers=headers,
+                        timeout=settings.llm_timeout,
+                    ) as llm_resp:
+                        llm_resp.raise_for_status()
+                        async for line in llm_resp.aiter_lines():
+                            if not line.startswith("data: "):
+                                continue
+                            data_str = line[6:].strip()
+                            if data_str == "[DONE]":
+                                break
+                            try:
+                                chunk = json.loads(data_str)
+                                collected_chunks.append(chunk)
+                                choices = chunk.get("choices") or []
+                                if choices:
+                                    delta = choices[0].get("delta") or {}
+                                    assembled_content += delta.get("content") or ""
+                                    fr = choices[0].get("finish_reason")
+                                    if fr:
+                                        finish_reason = fr
+                            except json.JSONDecodeError:
+                                pass
+
+            except httpx.TimeoutException:
+                err = json.dumps(
+                    {"error": {"message": "LLM backend timed out", "type": "timeout"}}
+                )
+                yield f"data: {err}\n\ndata: [DONE]\n\n"
+                return
+            except httpx.HTTPStatusError as exc:
+                err = json.dumps(
+                    {
+                        "error": {
+                            "message": f"LLM backend error: {exc.response.text}",
+                            "type": "backend_error",
+                        }
+                    }
+                )
+                yield f"data: {err}\n\ndata: [DONE]\n\n"
+                return
+            except httpx.ConnectError:
+                err = json.dumps(
+                    {
+                        "error": {
+                            "message": "Cannot connect to LLM backend",
+                            "type": "connection_error",
+                        }
+                    }
+                )
+                yield f"data: {err}\n\ndata: [DONE]\n\n"
+                return
+
+            _llm_latency_ms = int((time.time() - llm_start) * 1000)
+            LLM_LATENCY.observe(_llm_latency_ms / 1000)
+
+            # ── Output scanning on assembled text ─────────────────
+            output_redactions: dict[str, int] = {}
+            output_decision_action = "ALLOW"
+            final_content = assembled_content
+
+            if assembled_content:
+                output_findings = await orchestrator.scan(assembled_content)
+                if output_findings:
+                    out_decision = policy_engine.evaluate(
+                        output_findings, is_output=True
+                    )
+                    if out_decision.action in ("MASK", "BLOCK"):
+                        output_decision_action = out_decision.action
+                        final_content, output_redactions = redact_text(
+                            assembled_content, out_decision.findings
+                        )
+
+            _total_latency_ms = int((time.time() - start_time) * 1000)
+
+            # ── Metrics ───────────────────────────────────────────
+            REQUEST_COUNTER.labels(decision=_input_decision.action).inc()
+            REQUEST_LATENCY.observe(_total_latency_ms / 1000)
+
+            # ── Audit ─────────────────────────────────────────────
+            async with async_session_factory() as session:
+                await write_audit_record(
+                    session=session,
+                    request_id=request_id,
+                    user_id=user_id,
+                    model=request.model,
+                    input_decision=_input_decision.action,
+                    output_decision=output_decision_action,
+                    policy_id=policy_engine.policy_id,
+                    reasons=_input_decision.reasons,
+                    input_redactions=_input_redactions,
+                    output_redactions=output_redactions,
+                    prompt_redacted=_prompt_redacted,
+                    response_redacted=final_content,
+                    detection_latency_ms=_detection_latency_ms,
+                    llm_latency_ms=_llm_latency_ms,
+                    total_latency_ms=_total_latency_ms,
+                )
+
+            # ── Build PPG metadata ────────────────────────────────
+            ppg = PPGMetadata(
+                request_id=str(request_id),
+                input_decision=_input_decision.action,
+                output_decision=output_decision_action,
+                input_redactions=_input_redactions,
+                output_redactions=output_redactions,
+                policy_id=policy_engine.policy_id,
+                detectors_used=orchestrator.get_active_detectors(),
+                latency_ms={
+                    "detection": _detection_latency_ms,
+                    "llm": _llm_latency_ms,
+                    "total": _total_latency_ms,
+                },
+            )
+            ppg_dict = ppg.model_dump()
+
+            # ── Re-emit SSE chunks ────────────────────────────────
+            if final_content != assembled_content and collected_chunks:
+                # Content was redacted — collapse to two clean chunks
+                first = collected_chunks[0]
+                chunk_id = first.get("id", f"chatcmpl-{request_id}")
+                created = first.get("created", int(time.time()))
+                model_name = first.get("model", request.model)
+
+                content_chunk = {
+                    "id": chunk_id,
+                    "object": "chat.completion.chunk",
+                    "created": created,
+                    "model": model_name,
+                    "choices": [
+                        {
+                            "index": 0,
+                            "delta": {"content": final_content},
+                            "finish_reason": None,
+                        }
+                    ],
+                }
+                yield f"data: {json.dumps(content_chunk)}\n\n"
+
+                done_chunk = {
+                    "id": chunk_id,
+                    "object": "chat.completion.chunk",
+                    "created": created,
+                    "model": model_name,
+                    "choices": [
+                        {
+                            "index": 0,
+                            "delta": {},
+                            "finish_reason": finish_reason or "stop",
+                        }
+                    ],
+                    "ppg": ppg_dict,
+                }
+                yield f"data: {json.dumps(done_chunk)}\n\n"
+            else:
+                # No redaction — re-emit original chunks; attach ppg to the last one
+                for i, chunk in enumerate(collected_chunks):
+                    if i == len(collected_chunks) - 1:
+                        chunk["ppg"] = ppg_dict
+                    yield f"data: {json.dumps(chunk)}\n\n"
+
+            yield "data: [DONE]\n\n"
+
+        return StreamingResponse(
+            _stream_generator(),
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "X-Accel-Buffering": "no",
+            },
+        )
+
+    # ─── Non-streaming path ───────────────────────────────────────
     try:
         async with httpx.AsyncClient() as client:
             llm_response = await client.post(
