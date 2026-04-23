@@ -16,8 +16,6 @@ streaming — no FastAPI TestClient needed (avoids DB/detector startup).
 import json
 from typing import Optional
 
-import pytest
-
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
 
