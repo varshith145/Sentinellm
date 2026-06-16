@@ -16,6 +16,16 @@ class Settings(BaseSettings):
     app_name: str = "SentinelLM Gateway"
     debug: bool = False
 
+    # --- Demo / Deployment Mode ---
+    demo_mode: bool = Field(
+        default=False,
+        description=(
+            "When True, the LLM proxy is disabled and /v1/chat/completions "
+            "returns a clean 503. Used for the public Hugging Face Spaces demo, "
+            "which showcases the detection pipeline via /scan and needs no LLM."
+        ),
+    )
+
     # --- LLM Backend ---
     llm_backend: str = Field(
         default="ollama", description="LLM backend type: 'ollama' or 'openai'"
@@ -35,19 +45,29 @@ class Settings(BaseSettings):
     )
 
     # --- Database ---
+    # Defaults to a self-contained async SQLite file so the app runs with no
+    # external Postgres (e.g. on Hugging Face Spaces). docker-compose overrides
+    # this with a Postgres URL for the full local stack.
     database_url: str = Field(
-        default="postgresql+asyncpg://ppg:ppg@db:5432/ppg",
-        description="Async PostgreSQL connection URL",
+        default="sqlite+aiosqlite:///./sentinellm_audit.db",
+        description="Async database connection URL (SQLite by default, Postgres in prod)",
     )
     database_url_sync: str = Field(
-        default="postgresql://ppg:ppg@db:5432/ppg",
-        description="Sync PostgreSQL connection URL (for migrations)",
+        default="sqlite:///./sentinellm_audit.db",
+        description="Sync database connection URL (for migrations/tools)",
     )
 
     # --- Semantic Model ---
     model_path: str = Field(
         default="./model/trained",
-        description="Path to fine-tuned DistilBERT model directory",
+        description="Path to fine-tuned DistilBERT model directory (local)",
+    )
+    semantic_model_id: str = Field(
+        default="varshith145/sentinellm-pii-ner",
+        description=(
+            "Hugging Face Hub model id to load the semantic detector from when "
+            "no local model directory is present (e.g. on Spaces)."
+        ),
     )
     semantic_model_enabled: bool = Field(
         default=True,

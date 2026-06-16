@@ -6,12 +6,15 @@ Only stores redacted content — never raw PII or secrets.
 """
 
 import hashlib
+import logging
 import uuid
 from datetime import datetime, timezone
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import AuditLog
+
+logger = logging.getLogger("sentinellm")
 
 
 async def write_audit_record(
@@ -77,5 +80,14 @@ async def write_audit_record(
         total_latency_ms=total_latency_ms,
     )
 
-    session.add(record)
-    await session.commit()
+    # Audit logging is supporting cast, not the critical path. A failure here
+    # (e.g. DB unavailable in the demo) must never break the user's request.
+    try:
+        session.add(record)
+        await session.commit()
+    except Exception as e:  # noqa: BLE001 — intentionally broad; audit is best-effort
+        logger.warning(f"Audit write failed (non-fatal): {e}")
+        try:
+            await session.rollback()
+        except Exception:  # noqa: BLE001
+            pass

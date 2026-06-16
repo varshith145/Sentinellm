@@ -46,17 +46,44 @@ class SemanticDetector(BaseDetector):
     operates in stub mode (returns no findings).
     """
 
-    def __init__(self, model_path: str = "./model/trained") -> None:
+    def __init__(
+        self,
+        model_path: str = "./model/trained",
+        model_id: str | None = None,
+    ) -> None:
+        """
+        Load the fine-tuned NER model.
+
+        Resolution order:
+          1. Local directory at ``model_path`` (used for local/full-stack runs
+             where the model was produced by ``model/train.py``).
+          2. Hugging Face Hub model id ``model_id`` (used on Spaces, where the
+             large model is not committed to git and is pulled from the Hub).
+
+        If neither is available, the detector operates in stub mode (returns
+        no findings) so the rest of the pipeline still works.
+        """
         self.model = None
         self.tokenizer = None
         self._available = False
 
+        # Decide what to load from: a real local dir wins; otherwise the Hub id.
+        load_target: str | None = None
+        source_desc: str = ""
         model_dir = Path(model_path)
-        if not model_dir.exists():
+        if model_dir.exists() and any(model_dir.iterdir()):
+            load_target = str(model_path)
+            source_desc = f"local path {model_path}"
+        elif model_id:
+            load_target = model_id
+            source_desc = f"Hugging Face Hub id '{model_id}'"
+
+        if load_target is None:
             logger.warning(
-                f"Semantic model not found at {model_path}. "
+                f"Semantic model not found at {model_path} and no Hub id configured. "
                 "Semantic detector will return no findings. "
-                "Train the model first (see model/train.py)."
+                "Train the model first (see model/train.py) or set "
+                "SENTINELLM_SEMANTIC_MODEL_ID."
             )
             return
 
@@ -67,13 +94,13 @@ class SemanticDetector(BaseDetector):
             )
             import torch  # noqa: F401 — ensure torch is available
 
-            self.tokenizer = AutoTokenizer.from_pretrained(model_path)
-            self.model = AutoModelForTokenClassification.from_pretrained(model_path)
+            self.tokenizer = AutoTokenizer.from_pretrained(load_target)
+            self.model = AutoModelForTokenClassification.from_pretrained(load_target)
             self.model.eval()
             self._available = True
-            logger.info(f"Semantic model loaded from {model_path}")
+            logger.info(f"Semantic model loaded from {source_desc}")
         except Exception as e:
-            logger.warning(f"Failed to load semantic model: {e}")
+            logger.warning(f"Failed to load semantic model from {source_desc}: {e}")
 
     @property
     def is_available(self) -> bool:

@@ -24,8 +24,14 @@ from typing import Optional
 
 import httpx
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse, Response, StreamingResponse
+from fastapi.responses import (
+    HTMLResponse,
+    JSONResponse,
+    Response,
+    StreamingResponse,
+)
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
+from pydantic import BaseModel
 
 from app.audit import write_audit_record
 from app.config import settings
@@ -91,7 +97,10 @@ async def lifespan(app: FastAPI):
         try:
             from app.detectors.semantic import SemanticDetector
 
-            semantic_detector = SemanticDetector(model_path=settings.model_path)
+            semantic_detector = SemanticDetector(
+                model_path=settings.model_path,
+                model_id=settings.semantic_model_id,
+            )
             if semantic_detector.is_available:
                 detectors.append(semantic_detector)
                 logger.info("Semantic detector initialized")
@@ -134,6 +143,17 @@ app = FastAPI(
 )
 
 
+# --- Demo Landing Page ---
+
+
+@app.get("/", include_in_schema=False)
+async def index():
+    """Serve the interactive demo page so visitors can test detection in-browser."""
+    from app.demo_page import INDEX_HTML
+
+    return HTMLResponse(content=INDEX_HTML)
+
+
 # --- Health Check ---
 
 
@@ -165,6 +185,70 @@ async def metrics():
       sentinellm_detection_latency_secs_bucket{le="0.1"} 230
     """
     return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
+
+
+# --- Detect-only Scan Endpoint (the public demo engine) ---
+
+
+class ScanRequest(BaseModel):
+    """Request body for the detect-only /scan endpoint."""
+
+    text: str
+
+
+@app.post("/scan")
+async def scan(req: ScanRequest):
+    """
+    Run the three-pass detection pipeline on a string — no LLM involved.
+
+    Returns the policy decision (ALLOW / MASK / BLOCK), every finding (entity
+    type, matched text, confidence, which detector caught it), the redacted
+    version of the text, and detection latency. This is what the public demo
+    calls; it needs no LLM backend or database.
+    """
+    if orchestrator is None or policy_engine is None:
+        return JSONResponse(
+            status_code=503,
+            content={"error": {"message": "Detection pipeline not ready", "type": "starting"}},
+        )
+
+    t0 = time.perf_counter()
+    findings = await orchestrator.scan(req.text)
+    decision = policy_engine.evaluate(findings)
+    elapsed_ms = round((time.perf_counter() - t0) * 1000, 1)
+
+    # Only the findings that actually drove the decision get redacted, matching
+    # the gateway's own behaviour. On BLOCK we still show the redacted preview.
+    if decision.action in ("MASK", "BLOCK") and decision.findings:
+        redacted_text, _ = redact_text(req.text, decision.findings)
+    else:
+        redacted_text = req.text
+
+    # Record per-finding metrics so the demo also exercises the metrics path.
+    for f in findings:
+        DETECTION_COUNTER.labels(
+            entity_type=f.entity_type.value, detector=f.detector
+        ).inc()
+
+    return {
+        "decision": decision.action,
+        "reasons": decision.reasons,
+        "findings": [
+            {
+                "entity_type": f.entity_type.value,
+                "category": f.category.value,
+                "text": f.matched_text,
+                "start": f.start,
+                "end": f.end,
+                "confidence": round(f.confidence, 3),
+                "detector": f.detector,
+            }
+            for f in findings
+        ],
+        "redacted_text": redacted_text,
+        "detectors_used": orchestrator.get_active_detectors(),
+        "latency_ms": elapsed_ms,
+    }
 
 
 # --- Main Chat Completions Endpoint ---
@@ -300,6 +384,25 @@ async def chat_completions(request: ChatCompletionRequest, raw_request: Request)
         )
 
         return JSONResponse(status_code=403, content=error_response.model_dump())
+
+    # ─── Demo mode: no LLM backend is configured ───
+    # The public demo runs detection-only. Rather than hang or crash trying to
+    # reach a non-existent Ollama/OpenAI backend, return a clean 503 pointing
+    # the caller at /scan. The LLM is connected to lazily here, never at startup.
+    if settings.demo_mode:
+        return JSONResponse(
+            status_code=503,
+            content={
+                "error": {
+                    "message": (
+                        "LLM backend not configured in demo mode. "
+                        "Use POST /scan to test the detection pipeline."
+                    ),
+                    "type": "demo_mode",
+                    "code": "llm_disabled",
+                }
+            },
+        )
 
     # ─── Step 6: Forward to LLM backend ───
     llm_start = time.time()

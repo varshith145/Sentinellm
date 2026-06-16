@@ -1,6 +1,21 @@
+---
+title: SentinelLM
+emoji: 🛡️
+colorFrom: indigo
+colorTo: blue
+sdk: docker
+app_port: 7860
+pinned: false
+license: mit
+---
+
 # SentinelLM 🛡️
 
 > **A self-hosted AI gateway that intercepts LLM traffic, detects PII and secrets across three detection passes, enforces configurable policies, and logs every decision — without sending your data anywhere.**
+
+### 🔴 Live demo: paste text and watch detection run → _add your Space URL here once deployed_
+
+The public demo runs the **detection pipeline only** (demo mode — LLM proxy disabled). Try the obfuscated example `reach me at john dot smith at company dot com` to see the fine-tuned model catch what regex can't.
 
 <p align="center">
   <img src="https://img.shields.io/badge/Python-3.11-blue?logo=python&logoColor=white" />

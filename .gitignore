@@ -42,3 +42,10 @@ htmlcov/
 
 # mypy
 .mypy_cache/
+
+# SQLite audit fallback (generated at runtime in demo mode)
+*.db
+sentinellm_audit.db
+*.db-journal
+*.db-wal
+screenshots/

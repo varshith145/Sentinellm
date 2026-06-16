@@ -5,11 +5,12 @@ Uses SQLAlchemy 2.0 async with asyncpg for PostgreSQL.
 Defines the AuditLog ORM model matching PRD Section 12.1.
 """
 
+import logging
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import Column, Text, Integer, DateTime, String
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy import Column, Text, Integer, DateTime, String, JSON, Uuid
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
     async_sessionmaker,
@@ -18,6 +19,14 @@ from sqlalchemy.ext.asyncio import (
 from sqlalchemy.orm import DeclarativeBase
 
 from app.config import settings
+
+logger = logging.getLogger("sentinellm")
+
+# Portable column types: use native Postgres JSONB/UUID when on Postgres,
+# but fall back to generic JSON / CHAR-backed UUID on SQLite so the same
+# models work in the self-contained demo (no Postgres required).
+JSONType = JSON().with_variant(JSONB(), "postgresql")
+UUIDType = Uuid(as_uuid=True)
 
 
 class Base(DeclarativeBase):
@@ -35,8 +44,8 @@ class AuditLog(Base):
 
     __tablename__ = "audit_log"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    request_id = Column(UUID(as_uuid=True), nullable=False, unique=True, index=True)
+    id = Column(UUIDType, primary_key=True, default=uuid.uuid4)
+    request_id = Column(UUIDType, nullable=False, unique=True, index=True)
     created_at = Column(
         DateTime(timezone=True),
         nullable=False,
@@ -47,9 +56,9 @@ class AuditLog(Base):
     input_decision = Column(String(10), nullable=False)  # ALLOW, MASK, BLOCK
     output_decision = Column(String(10), nullable=True)  # ALLOW, MASK, or null
     policy_id = Column(Text, nullable=False)
-    reasons = Column(JSONB, nullable=False, default=list)
-    input_redactions = Column(JSONB, nullable=False, default=dict)
-    output_redactions = Column(JSONB, nullable=False, default=dict)
+    reasons = Column(JSONType, nullable=False, default=list)
+    input_redactions = Column(JSONType, nullable=False, default=dict)
+    output_redactions = Column(JSONType, nullable=False, default=dict)
     prompt_redacted = Column(Text, nullable=False)
     response_redacted = Column(Text, nullable=True)
     prompt_hash = Column(String(64), nullable=False)  # SHA-256 hex
@@ -60,12 +69,13 @@ class AuditLog(Base):
 
 # --- Async Engine & Session Factory ---
 
-engine = create_async_engine(
-    settings.database_url,
-    echo=settings.debug,
-    pool_size=5,
-    max_overflow=10,
-)
+# SQLite does not support the QueuePool sizing args that Postgres uses, so only
+# pass them for non-SQLite backends.
+_engine_kwargs: dict = {"echo": settings.debug}
+if not settings.database_url.startswith("sqlite"):
+    _engine_kwargs.update(pool_size=5, max_overflow=10)
+
+engine = create_async_engine(settings.database_url, **_engine_kwargs)
 
 async_session_factory = async_sessionmaker(
     engine,
