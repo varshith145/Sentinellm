@@ -13,7 +13,7 @@ license: mit
 
 > **A self-hosted AI gateway that intercepts LLM traffic, detects PII and secrets across three detection passes, enforces configurable policies, and logs every decision — without sending your data anywhere.**
 
-### 🔴 Live demo: paste text and watch detection run → _add your Space URL here once deployed_
+### 🔴 [**Live demo →**](https://huggingface.co/spaces/varshith145/sentinellm) &nbsp;paste text and watch detection run (direct app: https://varshith145-sentinellm.hf.space)
 
 The public demo runs the **detection pipeline only** (demo mode — LLM proxy disabled). Try the obfuscated example `reach me at john dot smith at company dot com` to see the fine-tuned model catch what regex can't.
 
