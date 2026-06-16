@@ -15,12 +15,14 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from app.audit import write_audit_record
-from app.config import settings
+from app.config import Settings
 from app.db import AuditLog, Base
 
 
 def test_default_database_url_is_sqlite():
-    assert settings.database_url.startswith("sqlite+aiosqlite")
+    # Check the declared default, not the live value — CI overrides the env var
+    # with a Postgres URL, which is exactly the prod path we also support.
+    assert Settings.model_fields["database_url"].default.startswith("sqlite+aiosqlite")
 
 
 @pytest.mark.asyncio

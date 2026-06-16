@@ -209,7 +209,9 @@ async def scan(req: ScanRequest):
     if orchestrator is None or policy_engine is None:
         return JSONResponse(
             status_code=503,
-            content={"error": {"message": "Detection pipeline not ready", "type": "starting"}},
+            content={
+                "error": {"message": "Detection pipeline not ready", "type": "starting"}
+            },
         )
 
     t0 = time.perf_counter()

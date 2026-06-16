@@ -51,12 +51,13 @@ class TestScanEndpoint:
 
     @pytest.mark.asyncio
     async def test_benign_text_allows(self):
-        resp = await _client_post("/scan", {"text": "We use AWS for cloud hosting."})
+        text = "There is nothing sensitive in this sentence."
+        resp = await _client_post("/scan", {"text": text})
         assert resp.status_code == 200
         data = resp.json()
         assert data["decision"] == "ALLOW"
         assert data["findings"] == []
-        assert data["redacted_text"] == "We use AWS for cloud hosting."
+        assert data["redacted_text"] == text
         assert "latency_ms" in data
 
     @pytest.mark.asyncio
