@@ -42,6 +42,20 @@ class SlowFailingDetector(BaseDetector):
         raise ValueError("Async detector failed!")
 
 
+class MockSemanticDetector(BaseDetector):
+    """A mock detector whose class name matches the orchestrator's
+    "semantic" name check, with a call counter so tests can assert whether
+    the short-circuit actually skipped or invoked it."""
+
+    def __init__(self, findings: list[Finding]):
+        self._findings = findings
+        self.call_count = 0
+
+    async def detect(self, text: str) -> list[Finding]:
+        self.call_count += 1
+        return list(self._findings)
+
+
 # ── Helper ─────────────────────────────────────────────────────
 
 
@@ -347,3 +361,72 @@ class TestGetActiveDetectors:
     def test_empty_orchestrator_returns_empty_list(self):
         orchestrator = DetectionOrchestrator([])
         assert orchestrator.get_active_detectors() == []
+
+
+# ═══════════════════════════════════════════════════════════════
+#  SEMANTIC SHORT-CIRCUIT
+# ═══════════════════════════════════════════════════════════════
+
+
+class TestSemanticShortCircuit:
+    """The semantic pass is the expensive one (~150ms vs <1ms/~30ms for the
+    others) — it should only run when the fast passes didn't already reach
+    a confident conclusion."""
+
+    @pytest.mark.asyncio
+    async def test_confident_fast_finding_skips_semantic(self):
+        fast = MockDetector([_f(0, 10, confidence=0.95, detector="regex")])
+        semantic = MockSemanticDetector([_f(20, 30, confidence=0.9)])
+        orchestrator = DetectionOrchestrator([fast, semantic])
+
+        result = await orchestrator.scan("text")
+
+        assert semantic.call_count == 0
+        assert len(result) == 1
+
+    @pytest.mark.asyncio
+    async def test_confident_presidio_finding_still_escalates_to_semantic(self):
+        """Regression test: a confident Presidio PERSON_NAME match must not
+        skip semantic — it's contextual, not an exact structural match, and
+        can co-occur with obfuscated content Presidio itself can't see.
+        Measured on eval/run_eval.py: letting it trigger the skip dropped
+        micro-F1 from 0.9574 to 0.8298."""
+        fast = MockDetector([_f(0, 10, confidence=0.99, detector="presidio")])
+        semantic = MockSemanticDetector([_f(20, 30, confidence=0.9)])
+        orchestrator = DetectionOrchestrator([fast, semantic])
+
+        result = await orchestrator.scan("text")
+
+        assert semantic.call_count == 1
+        assert len(result) == 2
+
+    @pytest.mark.asyncio
+    async def test_no_fast_findings_escalates_to_semantic(self):
+        fast = MockDetector([])
+        semantic = MockSemanticDetector([_f(0, 10, confidence=0.9)])
+        orchestrator = DetectionOrchestrator([fast, semantic])
+
+        result = await orchestrator.scan("obfuscated text")
+
+        assert semantic.call_count == 1
+        assert len(result) == 1
+
+    @pytest.mark.asyncio
+    async def test_low_confidence_fast_finding_escalates_to_semantic(self):
+        fast = MockDetector([_f(0, 10, confidence=0.5, detector="presidio")])
+        semantic = MockSemanticDetector([_f(20, 30, confidence=0.9)])
+        orchestrator = DetectionOrchestrator([fast, semantic])
+
+        result = await orchestrator.scan("text")
+
+        assert semantic.call_count == 1
+        assert len(result) == 2
+
+    @pytest.mark.asyncio
+    async def test_no_semantic_detector_present_is_unaffected(self):
+        fast = MockDetector([_f(0, 10, confidence=0.5, detector="regex")])
+        orchestrator = DetectionOrchestrator([fast])
+
+        result = await orchestrator.scan("text")
+
+        assert len(result) == 1

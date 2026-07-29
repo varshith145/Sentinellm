@@ -40,23 +40,3 @@ GENERIC_PII/GENERIC_SECRET).
 |---|---|
 | GENERIC_PII | 27 |
 | GENERIC_SECRET | 18 |
-
-All 45 true positives came from the semantic pass — expected, not a bug: this
-held-out set is `synthetic_obfuscated.jsonl` (spelled-out SSNs, "at"/"dot"
-emails, informal phrasing), which is specifically the obfuscated-PII case
-regex and Presidio structurally can't match. A benchmark built from
-well-formed PII (`alice@example.com`, not "alice at example dot com") would
-show regex/Presidio contributing true positives instead — this dataset tests
-the thing only the fine-tuned model can do, by design.
-
-## Is precision=1.0 real, or an artifact of lenient matching?
-
-Checked before trusting it: precision is identical (1.0) whether spans are
-matched by IoU >= 0.5, IoU >= 0.3, or any overlap at all — matched spans
-average IoU=0.91, meaning the semantic model's predicted boundaries are
-tight, not wide guesses that happen to cover the true span. Only pushing to
-an unusually strict IoU >= 0.7 moves the number (micro F1 0.9574 -> 0.9362,
-one PII match falls just short of that boundary). The 12 hard-negative
-examples in the test split produced zero findings — the reported precision
-isn't hiding false positives in the accounting, and the eval genuinely found
-none.

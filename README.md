@@ -21,7 +21,7 @@ The public demo runs the **detection pipeline only** (demo mode — LLM proxy di
   <img src="https://img.shields.io/badge/Python-3.11-blue?logo=python&logoColor=white" />
   <img src="https://img.shields.io/badge/FastAPI-0.100+-green?logo=fastapi&logoColor=white" />
   <img src="https://img.shields.io/badge/DistilBERT-NER%20F1%3D0.849-orange?logo=huggingface&logoColor=white" />
-  <img src="https://img.shields.io/badge/Tests-281%20passed-brightgreen?logo=pytest&logoColor=white" />
+  <img src="https://img.shields.io/badge/Tests-298%20passed-brightgreen?logo=pytest&logoColor=white" />
   <img src="https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white" />
   <img src="https://img.shields.io/badge/License-MIT-lightgrey" />
 </p>
@@ -113,7 +113,7 @@ This is the differentiator. The fine-tuned DistilBERT model catches obfuscated P
 | **2 · Presidio** | Microsoft NLP + spaCy `en_core_web_lg` | ~30ms | PERSON_NAME, contextual PII, addresses |
 | **3 · Semantic NER** | Fine-tuned DistilBERT (BIO tagging) | ~150ms | GENERIC_PII, GENERIC_SECRET — obfuscated and informal |
 
-All three passes run in parallel via `asyncio.gather`. The orchestrator merges results, deduplicates overlapping spans (keeping highest confidence), and applies detector priority: `semantic > presidio > regex` on ties.
+Regex and Presidio run in parallel via `asyncio.gather`. The semantic pass — by far the most expensive — only runs when those two didn't already reach a confident conclusion (see Design Notes); when it does run, it's the same `asyncio.gather` step. The orchestrator then merges results, deduplicates overlapping spans (keeping highest confidence), and applies detector priority: `semantic > presidio > regex` on ties.
 
 ---
 
@@ -156,7 +156,10 @@ matches, not degenerate wide-span luck), and the 12 hard-negative examples in
 the split produced zero false positives. Full methodology and the robustness
 check in [`eval/results.md`](eval/results.md).
 
-**Load test, `/scan` (detection only, no LLM in the path), single `--workers 1` process — the same config `gateway/Dockerfile` runs in production, Apple M4:**
+**Load test, `/scan` (detection only, no LLM in the path), 4 `uvicorn`
+worker processes — the same config `gateway/Dockerfile` runs in production
+(docker-compose's Postgres stack; the HF Spaces demo is a separate,
+single-container SQLite deployment — see Design Notes), Apple M4:**
 
 ```bash
 python bench/load_test.py --url http://localhost:8000 --concurrency 100 --duration 60
@@ -164,16 +167,18 @@ python bench/load_test.py --url http://localhost:8000 --concurrency 100 --durati
 
 | Concurrency | Throughput | p50 | p95 | p99 |
 |---|---|---|---|---|
-| 10 | 132.6 req/s | 74.79ms | 85.84ms | 95.62ms |
-| 100 | 127.2 req/s | 764.81ms | 913.53ms | 1031.57ms |
+| 10 | 238.8 req/s | 34.69ms | 87.21ms | 98.87ms |
+| 100 | 258.5 req/s | 362.54ms | 732.37ms | 989.32ms |
 
-Throughput is identical at both concurrency levels (~130 req/s) — that's the
-real ceiling of one CPU-bound worker process doing Presidio/spaCy +
-DistilBERT inference. Below that ceiling, **p95 is 86ms**. Above it, requests
-queue and p95 balloons to 913ms — that's queueing delay on an overloaded
-process, not per-request cost increasing. See
-[`bench/results.md`](bench/results.md) for the full breakdown and what this
-implies for scaling (`--workers N`, one per core).
+That's 2.04x the throughput and 20% lower p95 than a single `--workers 1`
+process running the original unconditional 3-pass pipeline (127.2 req/s,
+913.53ms p95) — from two changes: the orchestrator now skips the ~150ms
+semantic pass once regex already gives a confident answer, and 4 worker
+processes spread whatever's left across cores. See
+[`bench/results.md`](bench/results.md) for the full investigation — what
+was tried, measured, and ruled out before landing here — and Design Notes
+below for why the accuracy cost of the short-circuit had to be checked
+against `eval/run_eval.py`, not assumed.
 
 ---
 
@@ -493,7 +498,7 @@ cd gateway && python3 -m pytest ../tests/ -v
 ```
 
 ```
-281 passed in 24.59s
+287 passed in 22.18s
 ```
 
 | File | Tests | Coverage |
@@ -501,16 +506,18 @@ cd gateway && python3 -m pytest ../tests/ -v
 | `test_regex.py` | 82 | Luhn algorithm, all 7 regex patterns, offsets, false-positive guards |
 | `test_policy.py` | 59 | All entity types, every confidence threshold boundary, output scanning |
 | `test_redact.py` | 31 | All 11 entity types + tokens, positions, adjacency, count aggregation |
-| `test_orchestrator.py` | 23 | Deduplication, overlap handling, detector priority, failure resilience |
+| `test_orchestrator.py` | 28 | Deduplication, overlap handling, detector priority, failure resilience, semantic short-circuit |
 | `test_integration.py` | 20 | Full pipeline: detect → evaluate → redact, end-to-end per scenario |
 | `test_streaming.py` | 29 | SSE chunk assembly, redacted re-emission, clean pass-through, error paths |
 | `test_console_api.py` | 28 | Policy CRUD, dry-run, live-reload, audit filters + cursor pagination, stats |
 | `test_scan.py` | 6 | `/scan` endpoint, demo-mode LLM gating, demo page |
 | `test_sqlite_fallback.py` | 3 | DB URL defaults to SQLite when unset |
+| `test_golden_path.py` | 1 | Console creates a BLOCK policy → gateway request trips it → audit view shows it → metric increments |
 
 Counted on Python 3.12 with the semantic detector disabled, matching CI's
 `SENTINELLM_SEMANTIC_MODEL_ENABLED=false` job. Plus 11 Vitest/RTL tests for
-the console (see [Console](#console-react--typescript) above).
+the console (see [Console](#console-react--typescript) above) — **298
+tests total**, which is what the badge at the top counts.
 
 ---
 
@@ -597,6 +604,7 @@ SentinelLM/
 | `SENTINELLM_CONSOLE_CORS_ORIGINS` | `http://localhost:5173` | Comma-separated allowlist for `/api/v1/*` |
 | `SENTINELLM_OTEL_ENABLED` | `false` | Auto-instrument FastAPI + export traces via OTLP/HTTP |
 | `SENTINELLM_OTEL_EXPORTER_ENDPOINT` | `http://jaeger:4318/v1/traces` | OTLP/HTTP traces endpoint |
+| `SENTINELLM_WORKERS` | `4` | `gateway/Dockerfile`'s `uvicorn --workers` count (not a `Settings` field — read directly in the container's `CMD`). Detection is CPU-bound, so this is what actually scales throughput; see Measured Performance. Lower it on constrained hardware — each worker loads its own copy of spaCy + DistilBERT. |
 
 ---
 
@@ -615,9 +623,21 @@ bash train.sh        # Full training pipeline via Docker
 
 ## Design Notes
 
-Four decisions worth explaining, not just stating:
+A few decisions worth explaining, not just stating:
 
-**Why the DB became authoritative for policy, killing YAML hot-reload.** The
+**Why policy evaluation is in-line, not a sidecar — and why its store
+became the DB, killing YAML hot-reload.** The industry-standard shape for
+"a service needs authorization decisions" is a policy sidecar (OPA/Rego is
+the canonical example): a separate process the request calls out to. That
+buys you a general-purpose policy language and independent deployment, at
+the cost of a network hop per decision. SentinelLM evaluates policy in-line
+— a plain Python function call inside the same request — because the rule
+shape here is narrow (`entity_type` / `action` / `min_confidence`, nothing
+more expressive is needed) and the hot-path budget is already tight: regex
+alone runs in <1ms, so adding an RPC to a sidecar for a decision this simple
+would often cost more than the detection it's gating, and it's one more
+container to run and secure for what's meant to be a simple self-hosted
+deployment. The storage side of that same component did move, though: the
 original design let you edit `default.yaml` and see the change take effect
 with no rebuild — a nice property for local iteration. But it's fundamentally
 incompatible with a console (or this console API) actually *authoring*
@@ -645,16 +665,28 @@ user-visible stall once the table isn't small. Keyset pagination on
 `(created_at, id)` costs a slightly odd cursor token in the API instead, and
 stays O(page size) regardless of how deep you page.
 
-**What the load test actually found: one worker saturates at ~130 req/s,
-not near it.** p95 was 86ms at concurrency 10 and 913ms at concurrency 100 —
-same throughput ceiling both times, which means the extra requests at
-concurrency 100 were queued, not slower. `--workers 1` in
-`gateway/Dockerfile` is the honest bottleneck: the pipeline is CPU-bound
-(spaCy NER, DistilBERT inference), not I/O-bound, so it doesn't benefit from
-more async concurrency past the point where the thread pool running that
-inference is saturated — it needs more worker *processes*, one per core, to
-scale further. This is the kind of thing you only find by actually running
-the load test rather than asserting a number.
+**What actually fixed the ~130 req/s ceiling — and what didn't.** One
+`--workers 1` process showed identical throughput at concurrency 10 and 100
+(~130 req/s either way), proving the process was saturated rather than
+requests being individually slow. Diagnosing before changing anything:
+disabling the semantic detector alone jumped throughput 126.6 → 521.5 req/s,
+isolating DistilBERT inference as the dominant cost. `torch.set_num_threads(1)`
+— the obvious, zero-cost fix for thread oversubscription — changed nothing
+measurably (127.3 req/s); `top` during the run showed only ~2.5–3.7 of 10
+cores in use with the system 60% idle, so oversubscription was never the
+problem. Adding 4 worker processes alone helped little (160.0 req/s, and
+p95 got *worse*) — most likely a per-process GIL ceiling around the
+CPU-bound inference (not ruled out as a contributor: Presidio's own
+2-worker thread pool cap), so more processes just added scheduling
+contention on top of the same per-request cost. What worked was
+reducing that cost: the orchestrator now runs regex + Presidio first and
+only escalates to semantic when neither already gave a confident answer,
+which cut real requests' need for the ~150ms pass roughly in half. Combined
+with 4 workers, that reached 258.5 req/s (2.04x baseline) with p95 down 20%
+(913ms → 732ms) — see `bench/results.md` for the full step-by-step
+measurements and `gateway/app/detectors/orchestrator.py` for why the skip
+condition is gated on regex findings specifically, not any fast-pass
+finding (the naive version cost real accuracy — see below).
 
 **Why the console (once built) won't get a live link.** Railway dropped its
 free tier in 2023 (now a one-time trial credit, then a paid Hobby plan); Fly

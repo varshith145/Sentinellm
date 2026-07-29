@@ -88,11 +88,20 @@ class SemanticDetector(BaseDetector):
             return
 
         try:
-            import torch  # noqa: F401 — ensure torch is available
+            import torch
             from transformers import (
                 AutoModelForTokenClassification,
                 AutoTokenizer,
             )
+
+            # Each request's inference already runs in its own thread
+            # (loop.run_in_executor in detect() below). Left at its default,
+            # torch also parallelizes each individual inference across every
+            # core (intra-op threads) — so N concurrent requests spawn N x
+            # num_cores threads competing for num_cores cores, thrashing
+            # instead of scaling. Pinning to 1 makes the thread pool the only
+            # source of parallelism.
+            torch.set_num_threads(1)
 
             self.tokenizer = AutoTokenizer.from_pretrained(load_target)
             self.model = AutoModelForTokenClassification.from_pretrained(load_target)

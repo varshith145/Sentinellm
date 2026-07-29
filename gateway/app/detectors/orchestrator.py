@@ -1,14 +1,19 @@
 """
 Detection Orchestrator — merges and deduplicates findings from all detectors.
 
-Runs all three detectors (regex, Presidio, semantic) in parallel via
-asyncio.gather, then merges overlapping findings keeping the highest
-confidence result.
+Runs the fast structural detectors (regex, Presidio) in parallel via
+asyncio.gather first. The semantic pass (fine-tuned DistilBERT, ~150ms —
+by far the most expensive of the three, see bench/results.md) only runs
+when the fast passes didn't already reach a confident conclusion, then
+merges overlapping findings keeping the highest confidence result.
 """
 
 import asyncio
+import logging
 
 from app.detectors.base import BaseDetector, Finding
+
+logger = logging.getLogger(__name__)
 
 # Detector priority for tie-breaking (higher = preferred)
 _DETECTOR_PRIORITY = {
@@ -16,6 +21,19 @@ _DETECTOR_PRIORITY = {
     "presidio": 2,
     "regex": 1,
 }
+
+# A regex finding at or above this confidence is treated as decisive enough
+# to skip the semantic pass for this request. Regex matches are exact
+# structural patterns (Luhn-validated card numbers, email/SSN/API-key
+# shapes) — a hit is essentially never wrong about *what's there*, but it
+# says nothing about what else might be in the same text. Presidio's
+# findings deliberately do NOT count here: measured on eval/run_eval.py,
+# letting a confident PERSON_NAME match (Presidio's contextual, non-exact
+# pass) trigger the skip dropped micro-F1 from 0.9574 to 0.8298 — it fires
+# on names inside text that also contains obfuscated PII/secrets Presidio
+# itself can't see, and skipping semantic then missed them.
+_CONCLUSIVE_CONFIDENCE = 0.85
+_CONCLUSIVE_DETECTOR = "regex"
 
 
 class DetectionOrchestrator:
@@ -29,10 +47,17 @@ class DetectionOrchestrator:
 
     def __init__(self, detectors: list[BaseDetector]) -> None:
         self.detectors = detectors
+        self._fast_detectors = [
+            d for d in detectors if "semantic" not in type(d).__name__.lower()
+        ]
+        self._slow_detectors = [
+            d for d in detectors if "semantic" in type(d).__name__.lower()
+        ]
 
     async def scan(self, text: str) -> list[Finding]:
         """
-        Run all detectors in parallel and return deduplicated findings.
+        Run the fast detectors, escalate to the semantic pass only if
+        needed, and return deduplicated findings.
 
         Args:
             text: The input text to scan.
@@ -40,24 +65,44 @@ class DetectionOrchestrator:
         Returns:
             Deduplicated list of Finding objects sorted by start position.
         """
-        results = await asyncio.gather(
-            *[d.detect(text) for d in self.detectors],
+        fast_results = await asyncio.gather(
+            *[d.detect(text) for d in self._fast_detectors],
             return_exceptions=True,
         )
+        all_findings = self._flatten(fast_results)
 
-        all_findings: list[Finding] = []
+        # Regex and Presidio only ever match known structural patterns —
+        # an obfuscated secret or PII string ("john dot smith at co dot com")
+        # produces zero fast-pass findings by construction, so "found
+        # nothing" must still escalate to semantic, not skip it. Skipping is
+        # only safe once a fast pass already found something decisive.
+        if self._slow_detectors and not self._is_conclusive(all_findings):
+            slow_results = await asyncio.gather(
+                *[d.detect(text) for d in self._slow_detectors],
+                return_exceptions=True,
+            )
+            all_findings.extend(self._flatten(slow_results))
+
+        return self._deduplicate(all_findings)
+
+    def _flatten(self, results: list) -> list[Finding]:
+        """Collect findings from a asyncio.gather(return_exceptions=True) batch."""
+        findings: list[Finding] = []
         for result in results:
             if isinstance(result, Exception):
                 # Log but don't crash — other detectors' results still valid
-                import logging
-
-                logging.getLogger(__name__).error(
-                    f"Detector failed: {result}", exc_info=result
-                )
+                logger.error(f"Detector failed: {result}", exc_info=result)
                 continue
-            all_findings.extend(result)
+            findings.extend(result)
+        return findings
 
-        return self._deduplicate(all_findings)
+    def _is_conclusive(self, findings: list[Finding]) -> bool:
+        """Whether the fast passes alone are confident enough to skip semantic."""
+        return any(
+            f.detector == _CONCLUSIVE_DETECTOR
+            and f.confidence >= _CONCLUSIVE_CONFIDENCE
+            for f in findings
+        )
 
     def _deduplicate(self, findings: list[Finding]) -> list[Finding]:
         """

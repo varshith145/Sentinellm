@@ -22,6 +22,7 @@ from sqlalchemy import (
     Uuid,
 )
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.exc import OperationalError, ProgrammingError
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
     async_sessionmaker,
@@ -137,8 +138,20 @@ async def get_session() -> AsyncSession:
 
 async def init_db() -> None:
     """Create all tables if they don't exist."""
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    try:
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+    except (OperationalError, ProgrammingError) as e:
+        # create_all's checkfirst reflects, then creates — two separate
+        # round-trips, not one atomic operation. With --workers > 1, every
+        # process starts this at once: they can all reflect "table absent"
+        # before any of them commits the CREATE, so the losers hit
+        # duplicate-table here. The table exists either way, which is all
+        # this function guarantees — safe to ignore, unsafe to swallow
+        # anything else.
+        if "already exists" not in str(e).lower():
+            raise
+        logger.info("Tables already created by another worker process, continuing")
 
 
 async def close_db() -> None:
