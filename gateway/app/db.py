@@ -9,7 +9,18 @@ import logging
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import Column, Text, Integer, DateTime, String, JSON, Uuid
+from app.config import settings
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    Column,
+    DateTime,
+    Float,
+    Integer,
+    String,
+    Text,
+    Uuid,
+)
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
@@ -17,8 +28,6 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 from sqlalchemy.orm import DeclarativeBase
-
-from app.config import settings
 
 logger = logging.getLogger("sentinellm")
 
@@ -31,8 +40,6 @@ UUIDType = Uuid(as_uuid=True)
 
 class Base(DeclarativeBase):
     """SQLAlchemy declarative base."""
-
-    pass
 
 
 class AuditLog(Base):
@@ -65,6 +72,44 @@ class AuditLog(Base):
     detection_latency_ms = Column(Integer, nullable=False)
     llm_latency_ms = Column(Integer, nullable=True)
     total_latency_ms = Column(Integer, nullable=False)
+
+
+class Policy(Base):
+    """
+    A single policy rule: one entity type, one action, one confidence threshold.
+
+    The DB is the authoritative source of policy rules at runtime — the console
+    reads and writes this table directly. gateway/policies/default.yaml is only
+    consulted once, to seed this table on first boot (empty table), plus to
+    supply the policy_id/default_action/output_scanning globals that are not
+    yet exposed as per-rule console settings.
+
+    If multiple enabled rows target the same entity_type, PolicyEngine.reload()
+    resolves the conflict by taking the most recently updated row — see
+    policy.py.
+    """
+
+    __tablename__ = "policies"
+
+    id = Column(UUIDType, primary_key=True, default=uuid.uuid4)
+    name = Column(Text, nullable=False)
+    description = Column(Text, nullable=True)
+    entity_type = Column(String(50), nullable=False, index=True)
+    category = Column(String(20), nullable=False)  # PII or SECRET
+    action = Column(String(10), nullable=False)  # ALLOW, MASK, BLOCK
+    min_confidence = Column(Float, nullable=False, default=0.5)
+    enabled = Column(Boolean, nullable=False, default=True)
+    created_at = Column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+    )
+    updated_at = Column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
 
 
 # --- Async Engine & Session Factory ---

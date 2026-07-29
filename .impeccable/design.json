@@ -1,0 +1,188 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-07-29T00:00:00Z",
+  "title": "Design System: SentinelLM Console",
+  "extensions": {
+    "colorMeta": {
+      "paper": {
+        "role": "neutral",
+        "displayName": "Chart Paper",
+        "canonical": "oklch(96% 0.017 88)",
+        "tonalRamp": ["oklch(15% 0.017 88)", "oklch(27% 0.017 88)", "oklch(39% 0.017 88)", "oklch(51% 0.017 88)", "oklch(63% 0.017 88)", "oklch(75% 0.017 88)", "oklch(87% 0.017 88)", "oklch(95% 0.017 88)"]
+      },
+      "paper-dark": {
+        "role": "neutral",
+        "displayName": "Chart Paper (night-shift)",
+        "canonical": "oklch(21% 0.011 73.3)",
+        "tonalRamp": ["oklch(15% 0.011 73.3)", "oklch(27% 0.011 73.3)", "oklch(39% 0.011 73.3)", "oklch(51% 0.011 73.3)", "oklch(63% 0.011 73.3)", "oklch(75% 0.011 73.3)", "oklch(87% 0.011 73.3)", "oklch(95% 0.011 73.3)"]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Recorder Ink",
+        "canonical": "oklch(23% 0.018 82.1)",
+        "tonalRamp": ["oklch(15% 0.018 82.1)", "oklch(27% 0.018 82.1)", "oklch(39% 0.018 82.1)", "oklch(51% 0.018 82.1)", "oklch(63% 0.018 82.1)", "oklch(75% 0.018 82.1)", "oklch(87% 0.018 82.1)", "oklch(95% 0.018 82.1)"]
+      },
+      "ink-dark": {
+        "role": "neutral",
+        "displayName": "Recorder Ink (night-shift)",
+        "canonical": "oklch(93% 0.023 87.2)",
+        "tonalRamp": ["oklch(15% 0.023 87.2)", "oklch(27% 0.023 87.2)", "oklch(39% 0.023 87.2)", "oklch(51% 0.023 87.2)", "oklch(63% 0.023 87.2)", "oklch(75% 0.023 87.2)", "oklch(87% 0.023 87.2)", "oklch(95% 0.023 87.2)"]
+      },
+      "ink-muted": {
+        "role": "neutral",
+        "displayName": "Ink Muted",
+        "canonical": "#6b6250"
+      },
+      "hairline": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "#ddd4bc"
+      },
+      "hairline-strong": {
+        "role": "neutral",
+        "displayName": "Hairline Strong",
+        "canonical": "#b8ac8c"
+      },
+      "block": {
+        "role": "primary",
+        "displayName": "Alert Vermillion",
+        "canonical": "oklch(53% 0.167 33.6)",
+        "tonalRamp": ["oklch(15% 0.167 33.6)", "oklch(27% 0.167 33.6)", "oklch(39% 0.167 33.6)", "oklch(51% 0.167 33.6)", "oklch(63% 0.167 33.6)", "oklch(75% 0.167 33.6)", "oklch(87% 0.167 33.6)", "oklch(95% 0.167 33.6)"]
+      },
+      "block-dark": {
+        "role": "primary",
+        "displayName": "Alert Vermillion (night-shift)",
+        "canonical": "oklch(65% 0.174 40)"
+      },
+      "mask": {
+        "role": "secondary",
+        "displayName": "Ochre Amber",
+        "canonical": "oklch(52% 0.105 75.9)",
+        "tonalRamp": ["oklch(15% 0.105 75.9)", "oklch(27% 0.105 75.9)", "oklch(39% 0.105 75.9)", "oklch(51% 0.105 75.9)", "oklch(63% 0.105 75.9)", "oklch(75% 0.105 75.9)", "oklch(87% 0.105 75.9)", "oklch(95% 0.105 75.9)"],
+        "notes": "Renders as deep ochre in light mode; only the dark-mode value (#d9a438) reads as bright amber."
+      },
+      "mask-dark": {
+        "role": "secondary",
+        "displayName": "Ochre Amber (night-shift)",
+        "canonical": "oklch(75% 0.135 81.3)"
+      }
+    },
+    "typographyMeta": {
+      "data": { "displayName": "Data", "purpose": "Every gateway-produced fact: numbers, timestamps, IDs, entity types, decisions. Mono only. Ceiling is 1.5rem (MetricCard headline) — the system has no display/headline tier above it." },
+      "title": { "displayName": "Title", "purpose": "Page-level name only (Policy / Audit / Metrics)." },
+      "label": { "displayName": "Label", "purpose": "Column headers, field labels, badge chrome, nav wordmark." },
+      "body": { "displayName": "Body", "purpose": "Descriptions, dry-run help text, form labels." }
+    },
+    "shadows": [
+      { "name": "drawer-overlay", "value": "0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)", "purpose": "The audit detail drawer only (Tailwind shadow-xl) — the sole persistent-shadow overlay in the system." },
+      { "name": "stamp-land-overshoot", "value": "0 4px 8px rgba(0,0,0,0.22)", "purpose": "Momentary shadow at the 55% keyframe of the dry-run stamp landing, fading to 0 2px 4px rgba(0,0,0,0.12) at 80% and gone by 100%. Never a resting shadow." }
+    ],
+    "motion": [
+      { "name": "recording-pulse", "value": "recording-pulse 2.4s ease-in-out infinite", "purpose": "The nav shell's at-rest kinetic tell (opacity 0.35↔1, ink dot). Reduced-motion: opacity fixed at 0.75, no animation." },
+      { "name": "trace-draw", "value": "trace-draw 0.9s ease-out forwards", "purpose": "RecorderStrip's SVG path reveal (stroke-dashoffset to 0) on dry-run completion. Skipped entirely under prefers-reduced-motion (gated in JS via matchMedia, not CSS alone)." },
+      { "name": "stamp-land", "value": "stamp-land 0.55s cubic-bezier(0.22, 1, 0.36, 1) both, 0.8s delay", "purpose": "DecisionBadge's press-down/settle landing after the trace draws. Quint ease-out with an explicitly authored two-step overshoot in the keyframes — not a bounce/elastic easing function. Reduced-motion: animation disabled." }
+    ],
+    "breakpoints": [
+      { "name": "lg", "value": "1024px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "PolicyForm's submit / DryRunPanel's Test button — ink-filled, inverts to outline on hover.",
+      "html": "<button class=\"ds-btn-primary\">Create policy</button>",
+      "css": ".ds-btn-primary { background: #211c13; color: #f6f1e5; border: 2px solid #211c13; border-radius: 0; padding: 6px 16px; font-family: -apple-system, \"SF Pro Text\", system-ui, \"Segoe UI\", sans-serif; font-size: 0.875rem; font-weight: 500; transition: background-color 0.15s, color 0.15s; cursor: pointer; } .ds-btn-primary:hover { background: transparent; color: #211c13; } .ds-btn-primary:focus-visible { outline: 2px solid #211c13; outline-offset: 2px; } .ds-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; } @media (prefers-color-scheme: dark) { .ds-btn-primary { background: #ede6d6; color: #1b1712; border-color: #ede6d6; } .ds-btn-primary:hover { background: transparent; color: #ede6d6; } }"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "input-text",
+      "description": "Shared input style across PolicyForm/DryRunPanel/AuditFilterBar — hairline border, ink focus border, no glow/ring.",
+      "html": "<input class=\"ds-input\" type=\"text\" placeholder=\"Block IBAN-like secrets\" />",
+      "css": ".ds-input { display: block; width: 100%; background: #f6f1e5; color: #211c13; border: 1px solid #b8ac8c; border-radius: 0; padding: 6px 12px; font-family: -apple-system, \"SF Pro Text\", system-ui, \"Segoe UI\", sans-serif; font-size: 0.875rem; } .ds-input::placeholder { color: #6b6250; } .ds-input:focus-visible { outline: none; border-color: #211c13; } @media (prefers-color-scheme: dark) { .ds-input { background: #1b1712; color: #ede6d6; border-color: #55492f; } .ds-input::placeholder { color: #a69a80; } .ds-input:focus-visible { border-color: #ede6d6; } }"
+    },
+    {
+      "name": "Decision Stamp",
+      "kind": "custom",
+      "refersTo": "decision-stamp-allow",
+      "description": "DecisionBadge — the ink-stamp mark. One entry showing all three severity/tilt variants: fixed per-decision rotation, asymmetric border-radius and border-width for a hand-pressed feel, mono uppercase text.",
+      "html": "<span class=\"ds-stamp ds-stamp-allow\">allow</span> <span class=\"ds-stamp ds-stamp-mask\">mask</span> <span class=\"ds-stamp ds-stamp-block\">block</span>",
+      "css": ".ds-stamp { display: inline-block; font-family: \"IBM Plex Mono\", ui-monospace, \"SF Mono\", Consolas, monospace; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; padding: 2px 8px; border-radius: 3px 7px 4px 8px; border-style: solid; border-width: 2.5px 1.5px 2px 2px; } .ds-stamp-allow { color: #211c13; border-color: rgba(33,28,19,0.6); transform: rotate(-1deg); } .ds-stamp-mask { color: #8a5e0a; border-color: #8a5e0a; transform: rotate(1deg); } .ds-stamp-block { color: #b7391e; border-color: #b7391e; transform: rotate(-2deg); } @media (prefers-color-scheme: dark) { .ds-stamp-allow { color: #ede6d6; border-color: rgba(237,230,214,0.5); } .ds-stamp-mask { color: #d9a438; border-color: #d9a438; } .ds-stamp-block { color: #e2602e; border-color: #e2602e; } }"
+    },
+    {
+      "name": "Table Row",
+      "kind": "custom",
+      "refersTo": "table-row",
+      "description": "AuditTable/PolicyTable row — hairline divider, 3% ink hover wash, mono data cells.",
+      "html": "<table class=\"ds-table\"><thead><tr class=\"ds-table-head\"><th>Time</th><th>Decision</th><th>Latency</th></tr></thead><tbody><tr class=\"ds-table-row\"><td class=\"ds-cell-mono\">14:32:05</td><td><span class=\"ds-stamp ds-stamp-mask\">mask</span></td><td class=\"ds-cell-mono\">86ms</td></tr></tbody></table>",
+      "css": ".ds-table { width: 100%; border-collapse: collapse; border: 1px solid #b8ac8c; } .ds-table-head { border-bottom: 2px solid #211c13; } .ds-table-head th { text-align: left; padding: 8px 16px; font-family: -apple-system, system-ui, sans-serif; font-size: 0.75rem; font-weight: 500; letter-spacing: 0.05em; text-transform: uppercase; color: #6b6250; } .ds-table-row { border-bottom: 1px solid #ddd4bc; cursor: pointer; } .ds-table-row:hover { background: rgba(33,28,19,0.03); } .ds-table-row td { padding: 8px 16px; font-size: 0.875rem; color: #211c13; } .ds-cell-mono { font-family: \"IBM Plex Mono\", ui-monospace, monospace; color: #6b6250; } @media (prefers-color-scheme: dark) { .ds-table { border-color: #55492f; } .ds-table-head { border-bottom-color: #ede6d6; } .ds-table-head th { color: #a69a80; } .ds-table-row { border-bottom-color: #3a3226; } .ds-table-row:hover { background: rgba(237,230,214,0.05); } .ds-table-row td { color: #ede6d6; } .ds-cell-mono { color: #a69a80; } }"
+    },
+    {
+      "name": "Channel Strip Nav",
+      "kind": "nav",
+      "refersTo": "nav-channel-strip",
+      "description": "NavBar — the recording-pulse dot plus the Policy/Audit/Metrics channel strip.",
+      "html": "<header class=\"ds-nav\"><div class=\"ds-nav-inner\"><span class=\"ds-nav-pulse\"></span><span class=\"ds-nav-word\">SentinelLM</span><nav class=\"ds-nav-links\"><a href=\"#\" class=\"ds-nav-link ds-nav-link-active\">Policy</a><a href=\"#\" class=\"ds-nav-link\">Audit</a><a href=\"#\" class=\"ds-nav-link\">Metrics</a></nav></div></header>",
+      "css": ".ds-nav { border-bottom: 2px solid #211c13; background: #f6f1e5; } .ds-nav-inner { display: flex; align-items: center; gap: 32px; max-width: 72rem; margin: 0 auto; padding: 12px 16px; } .ds-nav-pulse { display: inline-block; width: 8px; height: 8px; border-radius: 9999px; background: #211c13; animation: ds-recording-pulse 2.4s ease-in-out infinite; } @keyframes ds-recording-pulse { 0%, 100% { opacity: 0.35; } 50% { opacity: 1; } } .ds-nav-word { font-family: -apple-system, system-ui, sans-serif; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; color: #211c13; } .ds-nav-links { display: flex; gap: 24px; } .ds-nav-link { border-bottom: 2px solid transparent; padding: 4px 0; font-family: -apple-system, system-ui, sans-serif; font-size: 0.75rem; font-weight: 500; letter-spacing: 0.15em; text-transform: uppercase; color: #6b6250; text-decoration: none; } .ds-nav-link:hover { color: #211c13; } .ds-nav-link-active { border-bottom-color: #211c13; color: #211c13; } @media (prefers-color-scheme: dark) { .ds-nav { background: #1b1712; border-bottom-color: #ede6d6; } .ds-nav-pulse { background: #ede6d6; } .ds-nav-word { color: #ede6d6; } .ds-nav-link { color: #a69a80; } .ds-nav-link:hover, .ds-nav-link-active { color: #ede6d6; border-bottom-color: #ede6d6; } }"
+    },
+    {
+      "name": "Metric Card",
+      "kind": "card",
+      "refersTo": "metric-card",
+      "description": "MetricCard — hairline-bordered instrument plate; the one place the type ramp's 24px ceiling appears.",
+      "html": "<div class=\"ds-metric-card\"><p class=\"ds-metric-label\">Block rate</p><p class=\"ds-metric-value\">4.2%</p><p class=\"ds-metric-sublabel\">of 1,204 requests</p></div>",
+      "css": ".ds-metric-card { border: 1px solid #b8ac8c; padding: 12px 16px; } .ds-metric-label { font-family: -apple-system, system-ui, sans-serif; font-size: 0.75rem; font-weight: 500; letter-spacing: 0.05em; text-transform: uppercase; color: #6b6250; } .ds-metric-value { margin-top: 4px; font-family: \"IBM Plex Mono\", ui-monospace, monospace; font-size: 1.5rem; font-weight: 600; color: #211c13; } .ds-metric-sublabel { margin-top: 2px; font-family: \"IBM Plex Mono\", ui-monospace, monospace; font-size: 0.75rem; color: #6b6250; } @media (prefers-color-scheme: dark) { .ds-metric-card { border-color: #55492f; } .ds-metric-label, .ds-metric-sublabel { color: #a69a80; } .ds-metric-value { color: #ede6d6; } }"
+    },
+    {
+      "name": "Recorder Strip",
+      "kind": "custom",
+      "refersTo": "recorder-strip",
+      "description": "The dry-run signature moment: a calibration-grid SVG trace that draws left-to-right and lands on a decision. Static snapshot shown at the 'done' (BLOCK) state; the real component measures path length live via getTotalLength() and animates stroke-dashoffset — this snippet hardcodes an approximate stroke-dasharray since that measurement can't run outside the app.",
+      "html": "<div class=\"ds-recorder\"><svg viewBox=\"0 0 400 60\" preserveAspectRatio=\"none\" class=\"ds-recorder-svg\"><path d=\"M0,30 L170,30 L188,4 L198,30 L210,52 L222,30 L400,30\" class=\"ds-recorder-path\" /></svg></div>",
+      "css": ".ds-recorder { position: relative; height: 64px; overflow: hidden; border-top: 1px solid #b8ac8c; border-bottom: 1px solid #b8ac8c; background: rgba(33,28,19,0.02); } .ds-recorder-svg { width: 100%; height: 100%; } .ds-recorder-path { fill: none; stroke: #b7391e; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 340; stroke-dashoffset: 0; } @media (prefers-color-scheme: dark) { .ds-recorder { border-color: #55492f; background: rgba(237,230,214,0.04); } .ds-recorder-path { stroke: #e2602e; } }"
+    },
+    {
+      "name": "Redacted Text",
+      "kind": "custom",
+      "refersTo": "redacted-text",
+      "description": "RedactedText — marks [REDACTED_*] tokens in severity ink (underline, not highlight). [REDACTED_SECRET] is always block-ink; every other token is mask-ink PII, determined from the literal token string alone.",
+      "html": "<p class=\"ds-redacted\">Contact me at <mark class=\"ds-redact-mask\">[REDACTED_PII]</mark> or use key <mark class=\"ds-redact-secret\">[REDACTED_SECRET]</mark></p>",
+      "css": ".ds-redacted { font-family: \"IBM Plex Mono\", ui-monospace, monospace; font-size: 0.75rem; color: #211c13; } .ds-redact-mask, .ds-redact-secret { background: transparent; text-decoration-line: underline; text-decoration-thickness: 2px; text-underline-offset: 2px; border-radius: 0; } .ds-redact-mask { color: #8a5e0a; text-decoration-color: #8a5e0a; } .ds-redact-secret { color: #b7391e; text-decoration-color: #b7391e; } @media (prefers-color-scheme: dark) { .ds-redacted { color: #ede6d6; } .ds-redact-mask { color: #d9a438; text-decoration-color: #d9a438; } .ds-redact-secret { color: #e2602e; text-decoration-color: #e2602e; } }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Instrument Room",
+    "overview": "The console is built as a technician's recording desk: a live seismograph or polygraph, continuously tracing a stream of requests on chart paper, with a pen that marks anomalies in colored ink the instant they happen. The metaphor is not decorative — SentinelLM's actual job is exactly this: a continuous stream of traffic, monitored in real time, with detections flagged the moment they occur. The three built pages (Policy, Audit, Metrics) read as three channels on one recording desk, not sidebar-nav SaaS sections.\n\nTwo things were deliberately rejected in choosing this direction, and both rejections held through implementation. First, the indigo-and-slate default this project already had — recognizable on sight as an interchangeable SaaS-admin template. Second, the more obvious \"security tool\" answer — a green-phosphor, black-background hacker terminal — a costume, not a credible instrument. What actually shipped is lit, clinical, and precise: a warm paper ground, hard black ink structure, and exactly two severity inks, built with Tailwind v4's CSS-first @theme (no tailwind.config.* file — every token lives in console/src/index.css).\n\nThe build confirms the seed's \"bolder pass\" intent landed correctly: the paper has real material presence (a two-layer chain-line texture, not a flat tint), the two severity inks are saturated stamp-pad colors rather than dusty pastels, and the dry-run panel's trace-draw-and-stamp-land is the one place motion and shadow are allowed to be genuinely theatrical. Everywhere else stayed exactly as quiet as planned.",
+    "keyCharacteristics": [
+      "Warm paper ground with a real two-layer laid-paper texture, not a flat tint — black ink line-work, two severity inks (never more), both saturated enough to have real presence when they appear",
+      "IBM Plex Mono carries every gateway-produced fact (numbers, timestamps, IDs, entity types); the system sans stack carries every label the console itself authored",
+      "Flat by construction — depth comes from a three-tier line hierarchy (hairline / hairline-strong / 2px ink) and a hover ink-wash, never a drop shadow used as decoration, except the drawer overlay and the dry-run stamp-landing instant",
+      "Hard, rectilinear structure everywhere except the one place a real instrument would actually be soft: the ink stamp",
+      "A single quiet kinetic tell — a live \"recording\" pulse in the nav shell, in graphite ink, never a severity color — so the resting state reads as alive, not dormant",
+      "The type ramp itself enacts the Instrument/Chrome Split: there is no display or headline tier. The largest text in the system (24px) is a mono number in MetricCard — gateway-produced data, not console-authored chrome."
+    ],
+    "rules": [
+      { "name": "The Two-Ink Rule", "body": "Only two severity colors exist system-wide: Alert Vermillion for BLOCK, Ochre Amber for MASK. A third accent color is a sign the system has drifted from the instrument metaphor back toward generic dashboard decoration. Severity ink extends to failure/destructive states (form errors, crash boundary, delete-confirm) because those are real BLOCK-adjacent events, not decoration — but it never becomes a permanent at-rest UI accent, brand mark, nav color, or link color.", "section": "colors" },
+      { "name": "The Confident Ink Rule", "body": "A severity color that could be mistaken for a pastel has failed. Rarity of use is the restraint; saturation of the color itself is not where restraint applies.", "section": "colors" },
+      { "name": "The Instrument/Chrome Split Rule", "body": "If it is a fact the gateway produced (a number, a timestamp, an entity type, a decision), it renders in mono. If it is UI scaffolding the console itself authored (a label, a nav item, a button), it renders in sans. Mixing the two within one role is a drift signal. The rule is visible in the type scale itself: the tallest text in the system is a mono number, never a sans headline.", "section": "typography" },
+      { "name": "The Ink-Not-Shadow Rule", "body": "If something needs to look more important, make its line heavier or its ink darker before reaching for a shadow. A shadow is reserved for the audit drawer's overlay and the stamp's landing instant, not for making a table row feel like a card.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do keep the mono/sans split absolute: gateway-produced data in mono, console-authored chrome in sans, no exceptions.",
+      "Do let the dry-run panel be the one place motion and a landing shadow concentrate — trace-draw + .stamp-land, both quint-eased, never bounce/elastic.",
+      "Do treat the audit table and policy table as instrument-strip rows, dense and scannable, before treating them as anything decorative.",
+      "Do make the two severity inks confident and saturated — restraint is their rarity of use, not their intensity when used.",
+      "Do give the paper ground real two-layer chain-line texture and keep the one kinetic pulse in the nav shell, in graphite, never a severity color.",
+      "Do respect prefers-reduced-motion on every animation (.recording-pulse, .stamp-land, trace-draw) — the built system gates all three, two in CSS and one in JS."
+    ],
+    "donts": [
+      "Don't introduce a third accent color. Two severity inks, full stop.",
+      "Don't default to rounded cards with soft shadows — no rounded-lg/rounded-xl appears anywhere in the built component set, and it should stay that way outside the one stamp exception.",
+      "Don't reach for a dark, neon-accented \"hacker terminal\" palette. Dark mode is the same paper/ink pair under night-shift lighting, not a hue-shifted swap.",
+      "Don't use a severity ink as a permanent at-rest UI accent (nav, brand mark, link). It may extend to failure/destructive states (errors, crash boundary, delete-confirm) because those are real severity-adjacent events — that is the one place the seed's original \"never a UI accent\" language was too strict for what the build correctly does.",
+      "Don't reach for the unused -tint color pairs (block-tint, mask-tint) without a real second use case; they exist in index.css but nothing in the shipped UI reads them yet."
+    ]
+  }
+}

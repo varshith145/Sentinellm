@@ -20,10 +20,34 @@ import logging
 import time
 import uuid
 from contextlib import asynccontextmanager
-from typing import Optional
 
 import httpx
+from app.audit import write_audit_record
+from app.config import settings
+from app.console_api import router as console_router
+from app.db import async_session_factory, close_db, init_db
+from app.detectors.orchestrator import DetectionOrchestrator
+from app.detectors.regex import RegexDetector
+from app.metrics import (
+    ACTIVE_DETECTORS,
+    BLOCKS_COUNTER,
+    DETECTION_CONFIDENCE,
+    DETECTION_COUNTER,
+    DETECTION_LATENCY,
+    LLM_LATENCY,
+    REQUEST_COUNTER,
+    REQUEST_LATENCY,
+)
+from app.models import (
+    ChatCompletionRequest,
+    PolicyViolationResponse,
+    PPGMetadata,
+)
+from app.policy import PolicyEngine
+from app.redact import redact_text
+from app.tracing import setup_tracing, tracer
 from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import (
     HTMLResponse,
     JSONResponse,
@@ -33,34 +57,12 @@ from fastapi.responses import (
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from pydantic import BaseModel
 
-from app.audit import write_audit_record
-from app.config import settings
-from app.db import async_session_factory, close_db, init_db
-from app.detectors.orchestrator import DetectionOrchestrator
-from app.detectors.regex import RegexDetector
-from app.metrics import (
-    ACTIVE_DETECTORS,
-    BLOCKS_COUNTER,
-    DETECTION_COUNTER,
-    DETECTION_LATENCY,
-    LLM_LATENCY,
-    REQUEST_COUNTER,
-    REQUEST_LATENCY,
-)
-from app.models import (
-    ChatCompletionRequest,
-    PPGMetadata,
-    PolicyViolationResponse,
-)
-from app.policy import PolicyEngine
-from app.redact import redact_text
-
 logger = logging.getLogger("sentinellm")
 logging.basicConfig(level=logging.INFO)
 
 # --- Global instances (initialized at startup) ---
-orchestrator: Optional[DetectionOrchestrator] = None
-policy_engine: Optional[PolicyEngine] = None
+orchestrator: DetectionOrchestrator | None = None
+policy_engine: PolicyEngine | None = None
 
 
 @asynccontextmanager
@@ -110,6 +112,7 @@ async def lifespan(app: FastAPI):
             logger.warning(f"Semantic detector unavailable: {e}")
 
     orchestrator = DetectionOrchestrator(detectors)
+    app.state.orchestrator = orchestrator
     logger.info(
         f"Detection orchestrator ready with: {orchestrator.get_active_detectors()}"
     )
@@ -117,9 +120,19 @@ async def lifespan(app: FastAPI):
     # Set active detectors gauge (fixed at startup)
     ACTIVE_DETECTORS.set(len(orchestrator.get_active_detectors()))
 
-    # Initialize policy engine
+    # Initialize policy engine: load YAML for policy_id/default_action/output
+    # scanning, seed the `policies` table from it if empty, then load the
+    # in-memory rules cache from the DB (which is authoritative from here on).
     policy_engine = PolicyEngine(policy_path=settings.policy_path)
-    logger.info(f"Policy engine loaded: {policy_engine.policy_id}")
+    async with async_session_factory() as session:
+        seeded = await policy_engine.seed_if_empty(session)
+        await policy_engine.reload(session)
+    app.state.policy_engine = policy_engine
+    logger.info(
+        f"Policy engine loaded: {policy_engine.policy_id} "
+        f"({'seeded from YAML' if seeded else 'loaded from DB'}, "
+        f"{len(policy_engine.rules)} active rules)"
+    )
 
     logger.info("SentinelLM Gateway ready!")
 
@@ -141,6 +154,23 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan,
 )
+
+# CORS for the console API only. Explicit allowlist from env — never "*" on a
+# project whose whole premise is access control.
+_cors_origins = [
+    o.strip() for o in settings.console_cors_origins.split(",") if o.strip()
+]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=_cors_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.include_router(console_router)
+
+setup_tracing(app)
 
 
 # --- Demo Landing Page ---
@@ -231,6 +261,7 @@ async def scan(req: ScanRequest):
         DETECTION_COUNTER.labels(
             entity_type=f.entity_type.value, detector=f.detector
         ).inc()
+        DETECTION_CONFIDENCE.labels(detector=f.detector).observe(f.confidence)
 
     return {
         "decision": decision.action,
@@ -282,29 +313,38 @@ async def chat_completions(request: ChatCompletionRequest, raw_request: Request)
             )
 
     # ─── Step 2: Run three-pass detection on all messages ───
-    detection_start = time.time()
+    with tracer.start_as_current_span("detection_pipeline") as detection_span:
+        detection_start = time.time()
 
-    all_findings_by_index: dict[int, list] = {}
-    for item in texts_to_scan:
-        findings = await orchestrator.scan(item["content"])
-        if findings:
-            all_findings_by_index[item["index"]] = findings
+        all_findings_by_index: dict[int, list] = {}
+        for item in texts_to_scan:
+            findings = await orchestrator.scan(item["content"])
+            if findings:
+                all_findings_by_index[item["index"]] = findings
 
-    # Flatten all findings for policy evaluation
-    all_findings = [f for findings in all_findings_by_index.values() for f in findings]
+        # Flatten all findings for policy evaluation
+        all_findings = [
+            f for findings in all_findings_by_index.values() for f in findings
+        ]
 
-    detection_latency_ms = int((time.time() - detection_start) * 1000)
+        detection_latency_ms = int((time.time() - detection_start) * 1000)
+        detection_span.set_attribute("findings.count", len(all_findings))
 
-    # Record detection latency and per-finding counters
-    DETECTION_LATENCY.observe(detection_latency_ms / 1000)
-    for finding in all_findings:
-        DETECTION_COUNTER.labels(
-            entity_type=finding.entity_type.value,
-            detector=finding.detector,
-        ).inc()
+        # Record detection latency and per-finding counters
+        DETECTION_LATENCY.observe(detection_latency_ms / 1000)
+        for finding in all_findings:
+            DETECTION_COUNTER.labels(
+                entity_type=finding.entity_type.value,
+                detector=finding.detector,
+            ).inc()
+            DETECTION_CONFIDENCE.labels(detector=finding.detector).observe(
+                finding.confidence
+            )
 
     # ─── Step 3: Policy decision ───
-    input_decision = policy_engine.evaluate(all_findings)
+    with tracer.start_as_current_span("policy_evaluation") as policy_span:
+        input_decision = policy_engine.evaluate(all_findings)
+        policy_span.set_attribute("policy.decision", input_decision.action)
 
     # ─── Step 4: Redact if MASK ───
     input_redactions: dict[str, int] = {}
@@ -338,24 +378,25 @@ async def chat_completions(request: ChatCompletionRequest, raw_request: Request)
             BLOCKS_COUNTER.labels(entity_type=finding.entity_type.value).inc()
 
         # Write audit record
-        async with async_session_factory() as session:
-            await write_audit_record(
-                session=session,
-                request_id=request_id,
-                user_id=user_id,
-                model=request.model,
-                input_decision="BLOCK",
-                output_decision=None,
-                policy_id=policy_engine.policy_id,
-                reasons=input_decision.reasons,
-                input_redactions=input_redactions,
-                output_redactions=None,
-                prompt_redacted=prompt_redacted,
-                response_redacted=None,
-                detection_latency_ms=detection_latency_ms,
-                llm_latency_ms=None,
-                total_latency_ms=total_latency_ms,
-            )
+        with tracer.start_as_current_span("audit_write"):
+            async with async_session_factory() as session:
+                await write_audit_record(
+                    session=session,
+                    request_id=request_id,
+                    user_id=user_id,
+                    model=request.model,
+                    input_decision="BLOCK",
+                    output_decision=None,
+                    policy_id=policy_engine.policy_id,
+                    reasons=input_decision.reasons,
+                    input_redactions=input_redactions,
+                    output_redactions=None,
+                    prompt_redacted=prompt_redacted,
+                    response_redacted=None,
+                    detection_latency_ms=detection_latency_ms,
+                    llm_latency_ms=None,
+                    total_latency_ms=total_latency_ms,
+                )
 
         ppg = PPGMetadata(
             request_id=str(request_id),
@@ -443,33 +484,35 @@ async def chat_completions(request: ChatCompletionRequest, raw_request: Request)
 
             # ── Collect SSE chunks from LLM backend ──────────────
             try:
-                async with httpx.AsyncClient() as client:
-                    async with client.stream(
+                async with (
+                    httpx.AsyncClient() as client,
+                    client.stream(
                         "POST",
                         f"{backend_url}/v1/chat/completions",
                         json=sanitized_payload,
                         headers=headers,
                         timeout=settings.llm_timeout,
-                    ) as llm_resp:
-                        llm_resp.raise_for_status()
-                        async for line in llm_resp.aiter_lines():
-                            if not line.startswith("data: "):
-                                continue
-                            data_str = line[6:].strip()
-                            if data_str == "[DONE]":
-                                break
-                            try:
-                                chunk = json.loads(data_str)
-                                collected_chunks.append(chunk)
-                                choices = chunk.get("choices") or []
-                                if choices:
-                                    delta = choices[0].get("delta") or {}
-                                    assembled_content += delta.get("content") or ""
-                                    fr = choices[0].get("finish_reason")
-                                    if fr:
-                                        finish_reason = fr
-                            except json.JSONDecodeError:
-                                pass
+                    ) as llm_resp,
+                ):
+                    llm_resp.raise_for_status()
+                    async for line in llm_resp.aiter_lines():
+                        if not line.startswith("data: "):
+                            continue
+                        data_str = line[6:].strip()
+                        if data_str == "[DONE]":
+                            break
+                        try:
+                            chunk = json.loads(data_str)
+                            collected_chunks.append(chunk)
+                            choices = chunk.get("choices") or []
+                            if choices:
+                                delta = choices[0].get("delta") or {}
+                                assembled_content += delta.get("content") or ""
+                                fr = choices[0].get("finish_reason")
+                                if fr:
+                                    finish_reason = fr
+                        except json.JSONDecodeError:
+                            pass
 
             except httpx.TimeoutException:
                 err = json.dumps(
@@ -527,24 +570,25 @@ async def chat_completions(request: ChatCompletionRequest, raw_request: Request)
             REQUEST_LATENCY.observe(_total_latency_ms / 1000)
 
             # ── Audit ─────────────────────────────────────────────
-            async with async_session_factory() as session:
-                await write_audit_record(
-                    session=session,
-                    request_id=request_id,
-                    user_id=user_id,
-                    model=request.model,
-                    input_decision=_input_decision.action,
-                    output_decision=output_decision_action,
-                    policy_id=policy_engine.policy_id,
-                    reasons=_input_decision.reasons,
-                    input_redactions=_input_redactions,
-                    output_redactions=output_redactions,
-                    prompt_redacted=_prompt_redacted,
-                    response_redacted=final_content,
-                    detection_latency_ms=_detection_latency_ms,
-                    llm_latency_ms=_llm_latency_ms,
-                    total_latency_ms=_total_latency_ms,
-                )
+            with tracer.start_as_current_span("audit_write"):
+                async with async_session_factory() as session:
+                    await write_audit_record(
+                        session=session,
+                        request_id=request_id,
+                        user_id=user_id,
+                        model=request.model,
+                        input_decision=_input_decision.action,
+                        output_decision=output_decision_action,
+                        policy_id=policy_engine.policy_id,
+                        reasons=_input_decision.reasons,
+                        input_redactions=_input_redactions,
+                        output_redactions=output_redactions,
+                        prompt_redacted=_prompt_redacted,
+                        response_redacted=final_content,
+                        detection_latency_ms=_detection_latency_ms,
+                        llm_latency_ms=_llm_latency_ms,
+                        total_latency_ms=_total_latency_ms,
+                    )
 
             # ── Build PPG metadata ────────────────────────────────
             ppg = PPGMetadata(
@@ -694,24 +738,25 @@ async def chat_completions(request: ChatCompletionRequest, raw_request: Request)
     REQUEST_LATENCY.observe(total_latency_ms / 1000)
 
     # ─── Step 8: Write audit record ───
-    async with async_session_factory() as session:
-        await write_audit_record(
-            session=session,
-            request_id=request_id,
-            user_id=user_id,
-            model=request.model,
-            input_decision=input_decision.action,
-            output_decision=output_decision_action,
-            policy_id=policy_engine.policy_id,
-            reasons=input_decision.reasons,
-            input_redactions=input_redactions,
-            output_redactions=output_redactions,
-            prompt_redacted=prompt_redacted,
-            response_redacted=response_redacted,
-            detection_latency_ms=detection_latency_ms,
-            llm_latency_ms=llm_latency_ms,
-            total_latency_ms=total_latency_ms,
-        )
+    with tracer.start_as_current_span("audit_write"):
+        async with async_session_factory() as session:
+            await write_audit_record(
+                session=session,
+                request_id=request_id,
+                user_id=user_id,
+                model=request.model,
+                input_decision=input_decision.action,
+                output_decision=output_decision_action,
+                policy_id=policy_engine.policy_id,
+                reasons=input_decision.reasons,
+                input_redactions=input_redactions,
+                output_redactions=output_redactions,
+                prompt_redacted=prompt_redacted,
+                response_redacted=response_redacted,
+                detection_latency_ms=detection_latency_ms,
+                llm_latency_ms=llm_latency_ms,
+                total_latency_ms=total_latency_ms,
+            )
 
     # ─── Step 9: Return response with ppg metadata ───
     ppg = PPGMetadata(

@@ -1,0 +1,6 @@
+[tool.ruff.lint]
+# B008 (function-call-in-default-argument) fires on every FastAPI
+# `Depends(...)` / `Query(...)` default — that's the framework's own
+# dependency-injection idiom, not a bug. Ignoring it project-wide is
+# ruff's own documented recommendation for FastAPI codebases.
+ignore = ["B008"]

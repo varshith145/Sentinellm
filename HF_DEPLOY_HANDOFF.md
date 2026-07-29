@@ -117,6 +117,21 @@ add an `OPENAI`/`OLLAMA` key under **Space → Settings → Secrets** and set
 
 ---
 
+## 6b. When the console (console/) goes live on Vercel
+
+Two more Space repository variables (**Space → Settings → Variables**), not
+yet set as of the console's initial build:
+
+| Variable | Value | Why |
+|---|---|---|
+| `SENTINELLM_CONSOLE_READ_ONLY` | `true` | Blocks `POST`/`PATCH`/`DELETE` on `/api/v1/policies` with a 403 — `GET`s and dry-run stay open. Without this, the public console link lets any visitor edit the shared demo policies. |
+| `SENTINELLM_CONSOLE_CORS_ORIGINS` | the Vercel deployment's URL | Default is `http://localhost:5173` (dev only) — the deployed console's origin needs to be added or its API calls get CORS-blocked. |
+
+Restart the Space after setting these (Spaces don't hot-reload env var
+changes).
+
+---
+
 ## 7. Polish + resume
 
 - Put the **live Space URL** at the top of `README.md` (placeholder is already

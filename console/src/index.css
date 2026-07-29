@@ -1,0 +1,173 @@
+@import "tailwindcss";
+@import "@fontsource/ibm-plex-mono/400.css";
+@import "@fontsource/ibm-plex-mono/500.css";
+@import "@fontsource/ibm-plex-mono/600.css";
+
+/*
+ * Design tokens for "The Instrument Room" — a seismograph/polygraph
+ * recording desk, not a SaaS admin template. See DESIGN.md at the repo
+ * root for the full rationale. Two severity inks only (block, mask);
+ * everything else is paper and ink. Contrast-checked against WCAG AA
+ * (4.5:1) for every color used as text: ink 15.0:1, ink-muted 5.3:1,
+ * block 5.15:1, mask 5.05:1 on light paper; equivalent dark-mode pairs
+ * check out at 14.3/6.4/5.0/7.9:1.
+ */
+@theme {
+  --color-paper: #f6f1e5;
+  --color-paper-dark: #1b1712;
+
+  --color-ink: #211c13;
+  --color-ink-dark: #ede6d6;
+
+  --color-ink-muted: #6b6250;
+  --color-ink-muted-dark: #a69a80;
+
+  --color-hairline: #ddd4bc;
+  --color-hairline-dark: #3a3226;
+
+  --color-hairline-strong: #b8ac8c;
+  --color-hairline-strong-dark: #55492f;
+
+  /* BLOCK severity ink — a confident, saturated stamp-pad red-orange.
+     Reserved for blocked decisions and active anomaly marks only. */
+  --color-block: #b7391e;
+  --color-block-dark: #e2602e;
+  --color-block-tint: #f3ddd4;
+  --color-block-tint-dark: #3a2015;
+
+  /* MASK severity ink — confident ochre/amber, distinguishable from
+     block for common color-vision deficiencies (differs in hue, not
+     just lightness). */
+  --color-mask: #8a5e0a;
+  --color-mask-dark: #d9a438;
+  --color-mask-tint: #f1e6cd;
+  --color-mask-tint-dark: #362a12;
+
+  --font-sans:
+    -apple-system, "SF Pro Text", system-ui, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Consolas, monospace;
+
+  --radius-stamp: 3px 7px 4px 8px;
+}
+
+:root {
+  color-scheme: light dark;
+}
+
+/*
+ * Laid-paper texture: real paper-making texture (fine "laid" lines
+ * crossed by wider-spaced "chain" lines), not decorative noise — the
+ * calibration-grid device this whole direction is built on. Deliberately
+ * near-imperceptible (2-4% opacity) so it reads as material without
+ * fighting legibility or density.
+ */
+body {
+  @apply bg-paper text-ink antialiased;
+  @apply dark:bg-paper-dark dark:text-ink-dark;
+  font-family: var(--font-sans);
+  background-image:
+    repeating-linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--color-ink) 5%, transparent) 0,
+      color-mix(in srgb, var(--color-ink) 5%, transparent) 1px,
+      transparent 1px,
+      transparent 2px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      color-mix(in srgb, var(--color-ink) 7%, transparent) 0,
+      color-mix(in srgb, var(--color-ink) 7%, transparent) 1px,
+      transparent 1px,
+      transparent 32px
+    );
+  background-attachment: fixed;
+}
+
+@media (prefers-color-scheme: dark) {
+  body {
+    background-image:
+      repeating-linear-gradient(
+        90deg,
+        color-mix(in srgb, var(--color-ink-dark) 4%, transparent) 0,
+        color-mix(in srgb, var(--color-ink-dark) 4%, transparent) 1px,
+        transparent 1px,
+        transparent 2px
+      ),
+      repeating-linear-gradient(
+        0deg,
+        color-mix(in srgb, var(--color-ink-dark) 5%, transparent) 0,
+        color-mix(in srgb, var(--color-ink-dark) 5%, transparent) 1px,
+        transparent 1px,
+        transparent 32px
+      );
+  }
+}
+
+#root {
+  min-height: 100svh;
+}
+
+/* One small kinetic tell at rest — the channel strip's recording pulse. */
+@keyframes recording-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.recording-pulse {
+  animation: recording-pulse 2.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .recording-pulse {
+    animation: none;
+    opacity: 0.75;
+  }
+}
+
+/* The dry-run signature moment: a trace drawing left to right, landing on
+   a stamp that presses down and settles. See DESIGN.md's Elevation
+   exception — this is the one place a landing shadow is sanctioned. */
+@keyframes trace-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes stamp-land {
+  0% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+  55% {
+    transform: scale(0.92);
+    opacity: 1;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.22);
+  }
+  80% {
+    transform: scale(1.04);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 transparent;
+  }
+}
+
+.stamp-land {
+  /* The overshoot is authored explicitly in the keyframes above (55%/80%
+     steps), not borrowed from an elastic/back-eased curve — this is a
+     quint ease-out between those steps, not bounce easing. */
+  animation: stamp-land 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: 0.8s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stamp-land {
+    animation: none;
+  }
+}

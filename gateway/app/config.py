@@ -5,8 +5,8 @@ Loads settings from environment variables with sensible defaults.
 Uses Pydantic Settings for validation.
 """
 
-from pydantic_settings import BaseSettings
 from pydantic import Field
+from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
@@ -82,6 +82,51 @@ class Settings(BaseSettings):
     # --- Server ---
     host: str = "0.0.0.0"
     port: int = 8000
+
+    # --- Console API (/api/v1/*) ---
+    console_api_key: str = Field(
+        default="",
+        description=(
+            "Required value of the X-API-Key header on /api/v1/* routes. "
+            "Empty (the default) disables auth — set this in any deployment "
+            "reachable outside localhost."
+        ),
+    )
+    console_cors_origins: str = Field(
+        default="http://localhost:5173",
+        description=(
+            "Comma-separated list of origins allowed to call /api/v1/* "
+            "(the console's dev/prod URL). Never '*' — this project's premise "
+            "is access control."
+        ),
+    )
+    console_read_only: bool = Field(
+        default=False,
+        description=(
+            "When True, POST/PATCH/DELETE on /api/v1/policies return 403 — "
+            "GETs are unaffected. Used on the public Hugging Face Spaces "
+            "deployment so a live console demo is safely browsable by "
+            "strangers without letting them mutate the shared policy set. "
+            "Same shape as demo_mode, applied to the console API instead of "
+            "the LLM proxy."
+        ),
+    )
+
+    # --- OpenTelemetry ---
+    otel_enabled: bool = Field(
+        default=False,
+        description=(
+            "Auto-instrument FastAPI and export traces via OTLP/HTTP. Off by "
+            "default so pytest and plain `uvicorn` runs don't spend time "
+            "retrying a collector that isn't there — docker-compose turns "
+            "this on and points it at the bundled Jaeger service."
+        ),
+    )
+    otel_exporter_endpoint: str = Field(
+        default="http://jaeger:4318/v1/traces",
+        description="OTLP/HTTP traces endpoint.",
+    )
+    otel_service_name: str = Field(default="sentinellm-gateway")
 
     model_config = {
         "env_prefix": "SENTINELLM_",

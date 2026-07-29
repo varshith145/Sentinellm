@@ -35,12 +35,17 @@ services:
       SENTINELLM_POLICY_PATH: "/app/policies/default.yaml"
       SENTINELLM_SEMANTIC_MODEL_ENABLED: "true"
       SENTINELLM_DEBUG: "false"
+      SENTINELLM_CONSOLE_CORS_ORIGINS: "http://localhost:5173"
+      SENTINELLM_OTEL_ENABLED: "true"
+      SENTINELLM_OTEL_EXPORTER_ENDPOINT: "http://jaeger:4318/v1/traces"
     volumes:
       - ./model/trained:/app/model/trained:ro
-      - ./gateway/policies:/app/policies:ro  # live-mount so policy changes take effect without rebuilding
+      - ./gateway/policies:/app/policies:ro  # seed-only: read once at boot to populate the `policies` table if empty. The DB is authoritative after that — edit rules via the console/API, not this file, once the stack has booted once.
     depends_on:
       db:
         condition: service_healthy
+      jaeger:
+        condition: service_started
     extra_hosts:
       - "host.docker.internal:host-gateway"
     restart: unless-stopped
@@ -59,5 +64,46 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  # --- Jaeger (trace collector + UI) ---
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    ports:
+      - "16686:16686" # UI
+      - "4318:4318" # OTLP/HTTP receiver
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    restart: unless-stopped
+
+  # --- Prometheus (scrapes the gateway's /metrics) ---
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    depends_on:
+      - gateway
+    restart: unless-stopped
+
+  # --- Grafana (provisioned datasource + dashboard, zero-click) ---
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3001:3000"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
+      - GF_AUTH_DISABLE_LOGIN_FORM=true
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
 volumes:
   pgdata:
+  prometheus_data:
+  grafana_data:
