@@ -35,7 +35,7 @@ from sqlalchemy import delete
 
 settings.semantic_model_enabled = False
 
-from app.db import AuditLog, Policy, async_session_factory, init_db
+from app.db import AuditLog, Policy, async_session_factory, close_db, init_db
 from app.main import app, lifespan
 
 
@@ -51,6 +51,19 @@ async def _reset_db():
     module's setdefault becomes a no-op and it silently inherits this
     module's DB file. The policy this test creates (EMAIL -> BLOCK) must
     not leak into another file's assumptions about default policy behavior.
+
+    The post-yield `close_db()` matters beyond cleanup: the app's lifespan
+    already disposed the engine's connection pool on shutdown (inside the
+    test body, via `_AppClient.__aexit__`), so this teardown's own DB access
+    checks out a fresh pooled connection bound to *this* test's event loop
+    and leaves it sitting in the pool, open, when the fixture returns. The
+    next test gets its own event loop (pytest-asyncio's default is
+    function-scoped) but the *same* module-level `engine` singleton — so it
+    can be handed that stale, now-orphaned connection and fail with
+    "cannot perform operation: another operation is in progress" against
+    real Postgres (asyncpg connections are loop-bound; aiosqlite doesn't
+    have this failure mode, which is why it only showed up in CI). Disposing
+    again here empties the pool, so no connection outlives this test's loop.
     """
     await init_db()
     async with async_session_factory() as session:
@@ -62,6 +75,7 @@ async def _reset_db():
         await session.execute(delete(AuditLog))
         await session.execute(delete(Policy))
         await session.commit()
+    await close_db()
 
 
 class _AppClient:
