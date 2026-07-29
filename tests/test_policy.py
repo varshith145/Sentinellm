@@ -7,10 +7,8 @@ reasons format, and policy metadata.
 """
 
 import pytest
-
 from app.detectors.base import EntityCategory, EntityType, Finding
 from app.policy import PolicyEngine
-
 
 # ── Helpers ────────────────────────────────────────────────────
 

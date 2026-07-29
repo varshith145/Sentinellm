@@ -10,7 +10,6 @@ import asyncio
 
 from app.detectors.base import BaseDetector, Finding
 
-
 # Detector priority for tie-breaking (higher = preferred)
 _DETECTOR_PRIORITY = {
     "semantic": 3,

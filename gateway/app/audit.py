@@ -10,9 +10,8 @@ import logging
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.db import AuditLog
+from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = logging.getLogger("sentinellm")
 
@@ -89,5 +88,5 @@ async def write_audit_record(
         logger.warning(f"Audit write failed (non-fatal): {e}")
         try:
             await session.rollback()
-        except Exception:  # noqa: BLE001
-            pass
+        except Exception as rollback_error:  # noqa: BLE001 — intentionally broad; best-effort cleanup
+            logger.warning(f"Audit rollback failed (non-fatal): {rollback_error}")

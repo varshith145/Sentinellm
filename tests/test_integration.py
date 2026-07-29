@@ -10,13 +10,11 @@ the system-level behaviour (decisions, redacted text, counts) is right.
 """
 
 import pytest
-
 from app.detectors.base import EntityType
 from app.detectors.orchestrator import DetectionOrchestrator
 from app.detectors.regex import RegexDetector
 from app.policy import PolicyEngine
 from app.redact import redact_text
-
 
 # ── Shared Policy Fixture ───────────────────────────────────────
 
@@ -173,7 +171,7 @@ class TestPIITriggersMAsk:
         findings = await orchestrator.scan(text)
         decision = policy.evaluate(findings)
         assert decision.action == "MASK"
-        redacted, counts = redact_text(text, decision.findings)
+        redacted, _counts = redact_text(text, decision.findings)
         assert "[REDACTED_PHONE]" in redacted
         assert "555-867-5309" not in redacted
 
@@ -206,7 +204,7 @@ class TestPIITriggersMAsk:
         findings = await orchestrator.scan(text)
         decision = policy.evaluate(findings)
         assert decision.action == "MASK"
-        redacted, counts = redact_text(text, decision.findings)
+        redacted, _counts = redact_text(text, decision.findings)
         assert "[REDACTED_EMAIL]" in redacted
         assert "[REDACTED_PHONE]" in redacted
         assert "[REDACTED_SSN]" in redacted

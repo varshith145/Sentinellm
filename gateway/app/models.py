@@ -8,9 +8,9 @@ explicitly handle.
 
 from __future__ import annotations
 
-from typing import Any, Optional
-from pydantic import BaseModel, Field
+from typing import Any
 
+from pydantic import BaseModel, Field
 
 # --- Request Models ---
 
@@ -19,10 +19,10 @@ class ChatMessage(BaseModel):
     """A single message in the chat conversation."""
 
     role: str
-    content: Optional[str] = None
-    name: Optional[str] = None
-    tool_calls: Optional[list[Any]] = None
-    tool_call_id: Optional[str] = None
+    content: str | None = None
+    name: str | None = None
+    tool_calls: list[Any] | None = None
+    tool_call_id: str | None = None
 
     model_config = {"extra": "allow"}
 
@@ -37,15 +37,15 @@ class ChatCompletionRequest(BaseModel):
 
     model: str
     messages: list[ChatMessage]
-    temperature: Optional[float] = None
-    top_p: Optional[float] = None
-    n: Optional[int] = None
-    stream: Optional[bool] = False
-    stop: Optional[str | list[str]] = None
-    max_tokens: Optional[int] = None
-    presence_penalty: Optional[float] = None
-    frequency_penalty: Optional[float] = None
-    user: Optional[str] = None
+    temperature: float | None = None
+    top_p: float | None = None
+    n: int | None = None
+    stream: bool | None = False
+    stop: str | list[str] | None = None
+    max_tokens: int | None = None
+    presence_penalty: float | None = None
+    frequency_penalty: float | None = None
+    user: str | None = None
 
     model_config = {"extra": "allow"}
 
@@ -57,8 +57,8 @@ class ChatMessageResponse(BaseModel):
     """A message in the chat completion response."""
 
     role: str
-    content: Optional[str] = None
-    tool_calls: Optional[list[Any]] = None
+    content: str | None = None
+    tool_calls: list[Any] | None = None
 
     model_config = {"extra": "allow"}
 
@@ -68,7 +68,7 @@ class ChatChoice(BaseModel):
 
     index: int
     message: ChatMessageResponse
-    finish_reason: Optional[str] = None
+    finish_reason: str | None = None
 
     model_config = {"extra": "allow"}
 
@@ -92,7 +92,7 @@ class PPGMetadata(BaseModel):
 
     request_id: str
     input_decision: str
-    output_decision: Optional[str] = None
+    output_decision: str | None = None
     input_redactions: dict[str, int] = Field(default_factory=dict)
     output_redactions: dict[str, int] = Field(default_factory=dict)
     policy_id: str
@@ -110,8 +110,8 @@ class ChatCompletionResponse(BaseModel):
     created: int = 0
     model: str = ""
     choices: list[ChatChoice] = Field(default_factory=list)
-    usage: Optional[Usage] = None
-    ppg: Optional[PPGMetadata] = None
+    usage: Usage | None = None
+    ppg: PPGMetadata | None = None
 
     model_config = {"extra": "allow"}
 
@@ -120,4 +120,4 @@ class PolicyViolationResponse(BaseModel):
     """Response returned when a request is blocked by policy."""
 
     error: dict = Field(default_factory=dict)
-    ppg: Optional[PPGMetadata] = None
+    ppg: PPGMetadata | None = None

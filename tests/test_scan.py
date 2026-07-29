@@ -31,7 +31,7 @@ from app.config import settings
 settings.demo_mode = True
 settings.semantic_model_enabled = False
 
-from app.main import app, lifespan  # noqa: E402
+from app.main import app, lifespan
 
 
 async def _client_post(path: str, json: dict | None = None, method: str = "post"):

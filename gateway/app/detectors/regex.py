@@ -7,13 +7,13 @@ secrets (AWS keys, GitHub tokens, JWTs).
 """
 
 import re
+
 from app.detectors.base import (
+    ENTITY_CATEGORY_MAP,
     BaseDetector,
     EntityType,
     Finding,
-    ENTITY_CATEGORY_MAP,
 )
-
 
 # --- Luhn Validation (Credit Cards) ---
 

@@ -7,7 +7,6 @@ Processes findings in reverse order to preserve character offsets.
 
 from app.detectors.base import EntityType, Finding
 
-
 # Redaction token for each entity type
 REDACTION_TOKENS: dict[EntityType, str] = {
     EntityType.EMAIL: "[REDACTED_EMAIL]",

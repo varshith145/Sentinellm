@@ -7,7 +7,6 @@ empty inputs, and result ordering.
 """
 
 import pytest
-
 from app.detectors.base import (
     BaseDetector,
     EntityCategory,
@@ -15,7 +14,6 @@ from app.detectors.base import (
     Finding,
 )
 from app.detectors.orchestrator import DetectionOrchestrator
-
 
 # ── Mock Detectors ─────────────────────────────────────────────
 

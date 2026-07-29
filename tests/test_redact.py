@@ -7,10 +7,8 @@ entities, reverse-order offset preservation, and count aggregation.
 """
 
 import pytest
-
 from app.detectors.base import EntityCategory, EntityType, Finding
 from app.redact import REDACTION_TOKENS, redact_text
-
 
 # ── Helper ─────────────────────────────────────────────────────
 
@@ -201,7 +199,7 @@ class TestMultipleEntities:
             _f(EntityType.EMAIL, 26, 39, "john@test.com"),
             _f(EntityType.SSN, 4, 15, "123-45-6789"),
         ]
-        redacted, counts = redact_text(text, findings)
+        redacted, _counts = redact_text(text, findings)
         assert "[REDACTED_SSN]" in redacted
         assert "[REDACTED_EMAIL]" in redacted
 

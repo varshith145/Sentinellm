@@ -11,12 +11,11 @@ Verifies that:
 import uuid
 
 import pytest
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
-
 from app.audit import write_audit_record
 from app.config import Settings
 from app.db import AuditLog, Base
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 
 def test_default_database_url_is_sqlite():

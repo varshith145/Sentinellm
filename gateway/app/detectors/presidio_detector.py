@@ -8,15 +8,13 @@ Runs in a thread pool executor to avoid blocking the async event loop.
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
 
-from presidio_analyzer import AnalyzerEngine
-
 from app.detectors.base import (
+    ENTITY_CATEGORY_MAP,
     BaseDetector,
     EntityType,
     Finding,
-    ENTITY_CATEGORY_MAP,
 )
-
+from presidio_analyzer import AnalyzerEngine
 
 # --- Presidio Entity Mapping ---
 

@@ -91,7 +91,7 @@ async def lifespan(app: FastAPI):
         presidio_detector = PresidioDetector()
         detectors.append(presidio_detector)
         logger.info("Presidio detector initialized")
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001 — intentional graceful fallback if Presidio can't load
         logger.warning(f"Presidio detector unavailable: {e}")
 
     # Pass 3: Semantic (graceful fallback if model not trained)
@@ -108,7 +108,7 @@ async def lifespan(app: FastAPI):
                 logger.info("Semantic detector initialized")
             else:
                 logger.info("Semantic detector: model not found, skipping")
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 — intentional graceful fallback if the model can't load
             logger.warning(f"Semantic detector unavailable: {e}")
 
     orchestrator = DetectionOrchestrator(detectors)

@@ -14,15 +14,13 @@ streaming — no FastAPI TestClient needed (avoids DB/detector startup).
 """
 
 import json
-from typing import Optional
-
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
 
 
 def make_chunk(
-    content: Optional[str] = None,
-    finish_reason: Optional[str] = None,
+    content: str | None = None,
+    finish_reason: str | None = None,
     chunk_id: str = "chatcmpl-test",
     model: str = "test-model",
     created: int = 1700000000,

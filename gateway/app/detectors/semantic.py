@@ -88,18 +88,18 @@ class SemanticDetector(BaseDetector):
             return
 
         try:
+            import torch  # noqa: F401 — ensure torch is available
             from transformers import (
                 AutoModelForTokenClassification,
                 AutoTokenizer,
             )
-            import torch  # noqa: F401 — ensure torch is available
 
             self.tokenizer = AutoTokenizer.from_pretrained(load_target)
             self.model = AutoModelForTokenClassification.from_pretrained(load_target)
             self.model.eval()
             self._available = True
             logger.info(f"Semantic model loaded from {source_desc}")
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 — intentional graceful fallback if the model can't load
             logger.warning(f"Failed to load semantic model from {source_desc}: {e}")
 
     @property
