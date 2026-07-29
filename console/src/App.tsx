@@ -29,6 +29,7 @@
  * See DESIGN.md (repo root) and .impeccable/surfaces/console.md for the
  * full system this contract commits to.
  */
+import { Analytics } from "@vercel/analytics/react";
 import { Navigate, Route, Routes } from "react-router-dom";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -51,6 +52,7 @@ function App() {
           </Routes>
         </ErrorBoundary>
       </main>
+      <Analytics />
     </div>
   );
 }
