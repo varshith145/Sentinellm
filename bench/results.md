@@ -2,6 +2,12 @@
 
 Generated: 2026-07-29, Apple M4, 10 cores, 16GB RAM.
 
+This file documents the optimization investigation (short-circuit +
+multi-worker) step by step. For the current dated baseline table across
+concurrency 1/10/50/100 plus ensemble micro-F1, see
+[`../BENCHMARKS.md`](../BENCHMARKS.md), reproducible with
+`python benchmarks/loadtest.py`.
+
 **This measures `/scan` (detection pipeline: regex + Presidio + semantic NER)
 over real HTTP, not `/v1/chat/completions` end-to-end.** The LLM call is a
 separate, network- and model-dependent cost that this number does not include
