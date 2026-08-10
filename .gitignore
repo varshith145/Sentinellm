@@ -28,6 +28,7 @@ env/
 model/trained/
 model/base_model/
 model/data/processed/
+model/onnx/
 
 # OS
 .DS_Store
