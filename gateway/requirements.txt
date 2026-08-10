@@ -33,6 +33,7 @@ spacy>=3.7.0
 transformers>=4.36.0
 torch>=2.1.0
 huggingface_hub>=0.20.0  # pull the fine-tuned model from the Hub when no local dir
+onnxruntime>=1.28.0  # SENTINELLM_INFERENCE_BACKEND=onnx — run model/export_onnx.py first
 
 # --- Testing ---
 pytest>=7.4.0

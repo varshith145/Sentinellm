@@ -5,6 +5,8 @@ Loads settings from environment variables with sensible defaults.
 Uses Pydantic Settings for validation.
 """
 
+from typing import Literal
+
 from pydantic import Field
 from pydantic_settings import BaseSettings
 
@@ -72,6 +74,20 @@ class Settings(BaseSettings):
     semantic_model_enabled: bool = Field(
         default=True,
         description="Enable semantic detector (disable if model not trained yet)",
+    )
+    inference_backend: Literal["torch", "onnx"] = Field(
+        default="torch",
+        description=(
+            "Semantic detector inference backend. 'torch' loads the model "
+            "directly (model_path / semantic_model_id, as before). 'onnx' runs "
+            "the exported graph at onnx_model_path via ONNX Runtime — requires "
+            "running model/export_onnx.py first, since no ONNX build is "
+            "published to the Hub."
+        ),
+    )
+    onnx_model_path: str = Field(
+        default="./model/onnx",
+        description="Path to the ONNX-exported model directory (produced by model/export_onnx.py)",
     )
 
     # --- Policy ---

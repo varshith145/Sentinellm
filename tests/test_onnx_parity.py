@@ -28,7 +28,7 @@ from pathlib import Path
 
 import pytest
 
-pytest.importorskip("optimum")
+pytest.importorskip("optimum.exporters.onnx")
 pytest.importorskip("onnxruntime")
 
 REPO_ROOT = Path(__file__).parent.parent

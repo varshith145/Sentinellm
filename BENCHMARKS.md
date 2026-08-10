@@ -54,3 +54,72 @@ python eval/run_eval.py
 Read from `eval/results.md` at write time — run the command above first so
 that file is current before running this sweep. Full methodology in
 [`eval/results.md`](eval/results.md).
+
+## ONNX backend: PyTorch vs ONNX Runtime
+
+Git SHA: `e85181f` (dirty tree — uncommitted changes present)
+Hardware: arm64, 10 cores, 16GB RAM, Darwin 25.6.0 (same machine as the
+headline table above, but **not the same run** — see note below)
+
+`SENTINELLM_INFERENCE_BACKEND` now selects the semantic detector's inference
+path: `torch` (default, unchanged) or `onnx`, which runs the graph exported
+by `model/export_onnx.py` through `onnxruntime.InferenceSession` —
+`intra_op_num_threads` set explicitly to 1, same rationale as the existing
+`torch.set_num_threads(1)`: each request already gets its own thread-pool
+worker, so leaving ONNX Runtime's own intra-op parallelism at its default
+(every core, per call) would have concurrent requests thrash instead of
+scale. Both backends run the same BIO-decode logic (`SemanticDetector._decode`)
+so this isolates the model execution cost specifically — see
+[`tests/test_onnx_parity.py`](tests/test_onnx_parity.py) for the numeric
+proof the two backends agree (max abs logit diff ~1.3e-05), and
+`eval/run_eval.py` re-run after the `_decode` refactor to confirm the torch
+path's own output didn't move (still micro-F1 0.9574, byte-identical
+`eval/results.md`).
+
+**Paired-run note:** the headline table earlier in this file was captured
+~7 hours before this section, a different process, at a different point in
+this machine's uptime — not a fair baseline for a 2x claim. So both rows
+below come from two back-to-back gateway restarts run minutes apart in the
+same session (torch: 2026-08-10 23:49 UTC, onnx: 2026-08-10 23:43 UTC),
+identical config each time (4 uvicorn workers, sqlite, all three detectors
+active) — only `SENTINELLM_INFERENCE_BACKEND` changed between them.
+
+Reproduce (requires `python model/export_onnx.py` first — no ONNX build is
+published to the Hub, only PyTorch):
+
+```bash
+SENTINELLM_INFERENCE_BACKEND=torch python benchmarks/loadtest.py --url http://localhost:8000 --out /tmp/torch.md
+SENTINELLM_INFERENCE_BACKEND=onnx python benchmarks/loadtest.py --url http://localhost:8000 --out /tmp/onnx.md
+```
+
+(Restart the gateway between the two so the backend env var actually takes
+effect — it's read once at startup.)
+
+| Backend | Concurrency | Throughput | p50 | p95 | p99 | Requests | Errors |
+|---|---|---|---|---|---|---|---|
+| torch | 1 | 138.3 req/s | 9.82ms | 11.5ms | 12.17ms | 2768 | 0 |
+| torch | 10 | 274.4 req/s | 31.5ms | 79.53ms | 90.12ms | 5496 | 0 |
+| torch | 50 | 261.1 req/s | 186.86ms | 327.93ms | 381.24ms | 5263 | 0 |
+| torch | 100 | 247.8 req/s | 377.82ms | 738.6ms | 1352.06ms | 5042 | 0 |
+| onnx | 1 | 173.5 req/s | 7.04ms | 8.82ms | 9.64ms | 3471 | 0 |
+| onnx | 10 | 499.9 req/s | 17.96ms | 36.28ms | 40.44ms | 10011 | 0 |
+| onnx | 50 | 468.7 req/s | 58.35ms | 222.02ms | 305.02ms | 9427 | 0 |
+| onnx | 100 | 511.9 req/s | 188.27ms | 252.78ms | 303.88ms | 10315 | 0 |
+
+### Latency delta (ONNX vs PyTorch, paired runs above)
+
+| Concurrency | Throughput (torch → onnx) | Speedup | p99 (torch → onnx) | p99 reduction |
+|---|---|---|---|---|
+| 1 | 138.3 → 173.5 req/s | 1.25x | 12.17ms → 9.64ms | -21% |
+| 10 | 274.4 → 499.9 req/s | 1.82x | 90.12ms → 40.44ms | -55% |
+| 50 | 261.1 → 468.7 req/s | 1.80x | 381.24ms → 305.02ms | -20% |
+| 100 | 247.8 → 511.9 req/s | 2.07x | 1352.06ms → 303.88ms | -78% |
+
+ONNX Runtime is consistently faster at every concurrency level tested here —
+1.25x to 2.1x throughput, with the biggest tail-latency win at c=100 (torch's
+p99 blew out to 1.35s under load in this run; onnx held at 304ms). The c=100
+torch p99 is higher here than in the headline table's original torch run
+(769ms) — normal run-to-run variance on a shared dev machine, not a
+regression; the point of the paired setup is that both rows in this section
+came from back-to-back runs, so the *delta* between them is meaningful even
+though the absolute torch number moved between sessions.

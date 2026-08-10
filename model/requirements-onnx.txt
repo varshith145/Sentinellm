@@ -1,5 +1,5 @@
-# Export-time / CI-only dependencies for model/export_onnx.py and
-# tests/test_onnx_parity.py — not part of gateway/requirements.txt since the
-# gateway itself runs the raw PyTorch model, not ONNX.
+# Export-time dependency for model/export_onnx.py — not needed at gateway
+# runtime. onnxruntime itself lives in gateway/requirements.txt since the
+# gateway can run it directly (SENTINELLM_INFERENCE_BACKEND=onnx) and
+# tests/test_onnx_parity.py needs it too.
 optimum-onnx>=0.1.0
-onnxruntime>=1.28.0

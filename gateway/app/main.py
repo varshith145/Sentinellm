@@ -102,6 +102,8 @@ async def lifespan(app: FastAPI):
             semantic_detector = SemanticDetector(
                 model_path=settings.model_path,
                 model_id=settings.semantic_model_id,
+                inference_backend=settings.inference_backend,
+                onnx_model_path=settings.onnx_model_path,
             )
             if semantic_detector.is_available:
                 detectors.append(semantic_detector)
