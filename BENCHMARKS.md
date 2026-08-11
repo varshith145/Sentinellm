@@ -1,9 +1,5 @@
 # SentinelLM benchmarks
 
-Generated: 2026-08-10 16:49 UTC
-Git SHA: `ffc7bbc` (dirty tree — uncommitted changes present)
-Hardware: arm64, 10 cores, 16GB RAM, Darwin 25.6.0
-
 ## Reproduce
 
 ```bash
@@ -13,7 +9,10 @@ python benchmarks/loadtest.py --url http://localhost:8000
 Requires a running gateway (see README for startup). Deterministic by
 construction: fixed payload set, fixed duration per level (20.0s),
 payload order seeded with `--seed 42` (default 42) and round-robined
-per worker — same inputs always produce the same request sequence.
+per worker — same inputs always produce the same request sequence. The
+script refuses to run on a dirty working tree (`--allow-dirty` to override)
+so every number below is tied to a commit someone else can check out and
+reproduce exactly.
 
 ## Gateway config at time of run
 
@@ -26,12 +25,39 @@ per worker — same inputs always produce the same request sequence.
 
 ## Load test: `/scan` (detection pipeline, no LLM in the path)
 
+Two independent runs, same machine, same clean-tree requirement — kept as
+two rows rather than overwritten, since the spread between them is itself
+the signal: this pipeline's tail latency has real run-to-run variance under
+load, not just backend-to-backend variance (see the ONNX section below,
+which hit the same thing).
+
+**Run 1** — generated 2026-08-10 16:49 UTC, SHA `ffc7bbc` (dirty tree at the
+time; superseded by run 2's clean SHA below, kept for the variance record):
+
 | Concurrency | Throughput | p50 | p95 | p99 | Requests | Errors |
 |---|---|---|---|---|---|---|
 | 1 | 139.8 req/s | 9.81ms | 11.3ms | 11.92ms | 2796 | 0 |
 | 10 | 259.1 req/s | 32.32ms | 78.73ms | 87.6ms | 5191 | 0 |
 | 50 | 267.0 req/s | 152.32ms | 432.08ms | 674.66ms | 5389 | 0 |
 | 100 | 269.0 req/s | 348.98ms | 636.5ms | 769.52ms | 5459 | 0 |
+
+**Run 2 (clean tree)** — generated 2026-08-11 00:15 UTC, SHA `9436851`
+(clean — `git status --porcelain` empty, verified by the script itself
+before running):
+
+| Concurrency | Throughput | p50 | p95 | p99 | Requests | Errors |
+|---|---|---|---|---|---|---|
+| 1 | 140.6 req/s | 9.65ms | 11.5ms | 12.59ms | 2812 | 0 |
+| 10 | 290.5 req/s | 27.19ms | 80.35ms | 90.23ms | 5816 | 0 |
+| 50 | 260.7 req/s | 174.58ms | 386.66ms | 718.45ms | 5253 | 0 |
+| 100 | 265.9 req/s | 346.4ms | 707.92ms | 1246.92ms | 5420 | 0 |
+
+Throughput at c=1/10/50/100 agrees within ~10% across the two runs; p99 at
+c=50/100 swings more (674ms→718ms, 769ms→1247ms) — same pattern already
+seen in the ONNX section's paired runs, on the same shared dev machine.
+Treat any single p99 tail number in this file as ±30-40% noise at
+concurrency ≥50 unless it's from a paired same-session comparison (like the
+ONNX delta below); throughput and p50/p95 are the stable numbers.
 
 This measures `/scan` (regex + Presidio + semantic NER) over real HTTP —
 not `/v1/chat/completions` end-to-end, which also pays an LLM round-trip.
@@ -57,7 +83,12 @@ that file is current before running this sweep. Full methodology in
 
 ## ONNX backend: PyTorch vs ONNX Runtime
 
-Git SHA: `e85181f` (dirty tree — uncommitted changes present)
+Git SHA at measurement time: `e85181f` + uncommitted changes — those
+changes were committed unmodified immediately afterward as `9b3ed79`, so
+that's the SHA that actually reproduces this section (now further
+superseded by `9436851`, which only touched `.gitignore` and
+`benchmarks/loadtest.py`'s dirty-tree guard — no semantic-detector code
+changed after `9b3ed79`).
 Hardware: arm64, 10 cores, 16GB RAM, Darwin 25.6.0 (same machine as the
 headline table above, but **not the same run** — see note below)
 
