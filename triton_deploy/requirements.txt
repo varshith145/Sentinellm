@@ -1,0 +1,4 @@
+# Dependency for triton_deploy/verify_client.py — not part of
+# gateway/requirements.txt since it's deployment-verification tooling, not
+# gateway runtime code.
+tritonclient[http]>=2.71.0

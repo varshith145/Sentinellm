@@ -1,0 +1,44 @@
+name: "sentinellm"
+backend: "onnxruntime"
+max_batch_size: 8
+
+input [
+  {
+    name: "input_ids"
+    data_type: TYPE_INT64
+    dims: [ -1 ]
+  },
+  {
+    name: "attention_mask"
+    data_type: TYPE_INT64
+    dims: [ -1 ]
+  }
+]
+
+output [
+  {
+    name: "logits"
+    data_type: TYPE_FP32
+    dims: [ -1, 5 ]
+  }
+]
+
+# Batching only helps when concurrent requests can actually be grouped —
+# requests must share the same non-batch dims (sequence_length here). The
+# gateway's own SemanticDetector tokenizes one text at a time with no
+# padding (see gateway/app/detectors/semantic.py's _infer_onnx), so two
+# real requests will almost never share a sequence_length and Triton can't
+# batch them. This config demonstrates dynamic_batching correctly configured
+# and functional (see triton_deploy/verify_client.py's batch-size-histogram check
+# under concurrent, pre-padded requests) — it is not a claim that the
+# gateway's current unpadded call pattern benefits from it as-is.
+dynamic_batching {
+  max_queue_delay_microseconds: 5000
+}
+
+instance_group [
+  {
+    count: 2
+    kind: KIND_CPU
+  }
+]

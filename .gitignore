@@ -36,6 +36,7 @@ model/trained/
 model/base_model/
 model/data/processed/
 model/onnx/
+triton_deploy/models/**/*.onnx
 
 # OS
 .DS_Store
