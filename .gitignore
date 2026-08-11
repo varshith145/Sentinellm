@@ -21,6 +21,13 @@ env/
 *.swo
 *~
 
+# Claude Code local tooling (settings, installed skills) — not app code
+.claude/
+skills-lock.json
+
+# Personal planning notes, not part of the shipped project
+sentinellm_build_plan.md
+
 # Environment
 .env
 
