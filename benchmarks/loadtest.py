@@ -92,11 +92,11 @@ async def worker(
         try:
             resp = await client.post("/scan", json={"text": payload}, timeout=10.0)
             latency_ms = (time.perf_counter() - t0) * 1000
-            decision = (
-                resp.json().get("decision") if resp.status_code == 200 else None
-            )
+            decision = resp.json().get("decision") if resp.status_code == 200 else None
             stats.results.append(
-                Result(latency_ms=latency_ms, status=resp.status_code, decision=decision)
+                Result(
+                    latency_ms=latency_ms, status=resp.status_code, decision=decision
+                )
             )
         except (httpx.ConnectError, httpx.TimeoutException, httpx.ReadError):
             stats.errors += 1
@@ -111,7 +111,10 @@ def percentile(values: list[float], p: float) -> float:
 
 
 async def run_level(
-    client: httpx.AsyncClient, concurrency: int, duration: float, payload_order: list[str]
+    client: httpx.AsyncClient,
+    concurrency: int,
+    duration: float,
+    payload_order: list[str],
 ) -> dict:
     stats = Stats()
     stop_at = time.monotonic() + duration
@@ -147,7 +150,11 @@ def git_info() -> dict:
     def git(*args: str) -> str:
         try:
             return subprocess.run(
-                ["git", *args], cwd=REPO_ROOT, capture_output=True, text=True, check=True
+                ["git", *args],
+                cwd=REPO_ROOT,
+                capture_output=True,
+                text=True,
+                check=True,
             ).stdout.strip()
         except (subprocess.CalledProcessError, FileNotFoundError):
             return "unknown"
@@ -162,7 +169,10 @@ def hardware_info() -> dict:
     try:
         if platform.system() == "Darwin":
             raw = subprocess.run(
-                ["sysctl", "-n", "hw.memsize"], capture_output=True, text=True, check=True
+                ["sysctl", "-n", "hw.memsize"],
+                capture_output=True,
+                text=True,
+                check=True,
             ).stdout.strip()
             mem_gb = f"{int(raw) / (1024**3):.0f}GB"
         elif platform.system() == "Linux":
@@ -306,15 +316,33 @@ sweep so its numbers get pulled in here.
 
 
 async def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     parser.add_argument("--url", default="http://localhost:8000")
     parser.add_argument("--concurrencies", default="1,10,50,100")
-    parser.add_argument("--duration", type=float, default=20.0, help="seconds per level")
+    parser.add_argument(
+        "--duration", type=float, default=20.0, help="seconds per level"
+    )
     parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument("--workers", default="4 (uvicorn, per gateway/Dockerfile default)")
+    parser.add_argument(
+        "--workers", default="4 (uvicorn, per gateway/Dockerfile default)"
+    )
     parser.add_argument("--db-backend", default="sqlite (aiosqlite)")
     parser.add_argument("--out", default=str(REPO_ROOT / "BENCHMARKS.md"))
+    parser.add_argument(
+        "--allow-dirty",
+        action="store_true",
+        help="Skip the clean-tree check (numbers won't be tied to a reproducible commit)",
+    )
     args = parser.parse_args()
+
+    if not args.allow_dirty and git_info()["dirty"]:
+        raise SystemExit(
+            "Working tree is dirty — commit (or stash) before benchmarking, so the "
+            "numbers this writes are tied to a commit someone else can check out and "
+            "reproduce. Pass --allow-dirty to skip this check."
+        )
 
     concurrencies = [int(c) for c in args.concurrencies.split(",")]
     payload_order = PAYLOADS.copy()
@@ -324,7 +352,9 @@ async def main() -> None:
         try:
             await client.post("/scan", json={"text": "warm up"}, timeout=30.0)
         except httpx.HTTPError as e:
-            raise SystemExit(f"Could not reach {args.url} — is the gateway running? ({e})") from e
+            raise SystemExit(
+                f"Could not reach {args.url} — is the gateway running? ({e})"
+            ) from e
 
         levels = []
         for concurrency in concurrencies:
@@ -336,7 +366,14 @@ async def main() -> None:
 
     out_path = Path(args.out)
     write_benchmarks_md(
-        levels, args.url, args.duration, args.seed, args.workers, args.db_backend, health, out_path
+        levels,
+        args.url,
+        args.duration,
+        args.seed,
+        args.workers,
+        args.db_backend,
+        health,
+        out_path,
     )
     print(f"\nWrote {out_path}")
 
