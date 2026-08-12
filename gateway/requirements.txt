@@ -34,6 +34,7 @@ transformers>=4.36.0
 torch>=2.1.0
 huggingface_hub>=0.20.0  # pull the fine-tuned model from the Hub when no local dir
 onnxruntime>=1.28.0  # SENTINELLM_INFERENCE_BACKEND=onnx — run model/export_onnx.py first
+tritonclient[grpc]>=2.71.0  # SENTINELLM_INFERENCE_BACKEND=triton — see triton_deploy/
 
 # --- Testing ---
 pytest>=7.4.0

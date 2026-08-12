@@ -258,6 +258,33 @@ GENERIC_PII/GENERIC_SECRET).
 
 
 def main() -> None:
+    import argparse
+
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--backend",
+        default="torch",
+        choices=["torch", "onnx", "triton"],
+        help="Semantic detector inference backend (default: torch, the canonical baseline)",
+    )
+    parser.add_argument(
+        "--onnx-model-path",
+        default=None,
+        help="ONNX model directory for --backend onnx/triton (e.g. model/onnx-int8 "
+        "for the quantized model). Defaults to Settings.onnx_model_path.",
+    )
+    parser.add_argument("--triton-url", default="localhost:8101")
+    parser.add_argument("--triton-model-name", default="sentinellm")
+    parser.add_argument(
+        "--out",
+        default=str(OUTPUT_MD),
+        help="Where to write results.md (default: eval/results.md — the canonical "
+        "file benchmarks/loadtest.py reads from; pass a different path for "
+        "one-off comparisons like the quantized model so the canonical file "
+        "isn't overwritten with a non-default backend's numbers)",
+    )
+    args = parser.parse_args()
+
     test_examples = reconstruct_test_split()
     print(f"Reconstructed held-out test split: {len(test_examples)} examples")
 
@@ -280,7 +307,12 @@ def main() -> None:
         from app.detectors.semantic import SemanticDetector
 
         semantic = SemanticDetector(
-            model_path=settings.model_path, model_id=settings.semantic_model_id
+            model_path=settings.model_path,
+            model_id=settings.semantic_model_id,
+            inference_backend=args.backend,
+            onnx_model_path=args.onnx_model_path or settings.onnx_model_path,
+            triton_url=args.triton_url,
+            triton_model_name=args.triton_model_name,
         )
         if semantic.is_available:
             detectors.append(semantic)
@@ -291,13 +323,14 @@ def main() -> None:
         print(f"Semantic detector unavailable, skipping: {e}")
 
     orchestrator = DetectionOrchestrator(detectors)
-    print(f"Active detectors: {detector_names}")
+    print(f"Active detectors: {detector_names} (backend: {args.backend})")
 
     result = evaluate(test_examples, orchestrator)
     print(json.dumps(result, indent=2))
 
-    write_results_md(result, detector_names, OUTPUT_MD)
-    print(f"\nWrote {OUTPUT_MD}")
+    out_path = Path(args.out)
+    write_results_md(result, detector_names, out_path)
+    print(f"\nWrote {out_path}")
 
 
 if __name__ == "__main__":

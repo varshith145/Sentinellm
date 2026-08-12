@@ -9,15 +9,20 @@ Catches obfuscated and informal PII that regex and Presidio miss, such as:
 The model performs token-level classification with BIO tags:
   O, B-PII, I-PII, B-SECRET, I-SECRET
 
-Two inference backends, selected by SENTINELLM_INFERENCE_BACKEND:
+Three inference backends, selected by SENTINELLM_INFERENCE_BACKEND:
   - "torch" (default): loads the model directly via transformers, as before.
   - "onnx": runs the graph exported by model/export_onnx.py through ONNX
     Runtime. Requires that export to have been run first — no ONNX build is
     published to the Hub, only the PyTorch one.
+  - "triton": sends the same ONNX graph to a Triton Inference Server over
+    gRPC (see triton_deploy/). Tokenization still happens in-process — Triton
+    only serves the model graph, not the tokenizer — using the tokenizer
+    files at onnx_model_path (Triton has no use for them itself).
 
-Both backends share the same BIO-decoding logic (_decode) so behavior can't
-drift between them independently of the model weights themselves — see
-tests/test_onnx_parity.py for the numeric parity check this rests on.
+All three backends share the same BIO-decoding logic (_decode) so behavior
+can't drift between them independently of the model weights themselves —
+see tests/test_onnx_parity.py for the torch/onnx numeric parity check this
+rests on, and tests/test_triton_backend.py for the onnx/triton one.
 
 If the model is not available, gracefully returns no findings.
 """
@@ -63,16 +68,22 @@ class SemanticDetector(BaseDetector):
         model_id: str | None = None,
         inference_backend: str = "torch",
         onnx_model_path: str = "./model/onnx",
+        triton_url: str = "localhost:8101",
+        triton_model_name: str = "sentinellm",
     ) -> None:
         self.backend = inference_backend
         self.tokenizer = None
         self.model = None  # torch backend only
         self.session = None  # onnx backend only
+        self.triton_client = None  # triton backend only
+        self.triton_model_name = triton_model_name
         self.id2label: dict[int, str] = {}
         self._available = False
 
         if self.backend == "onnx":
             self._init_onnx(onnx_model_path)
+        elif self.backend == "triton":
+            self._init_triton(onnx_model_path, triton_url, triton_model_name)
         else:
             self._init_torch(model_path, model_id)
 
@@ -168,6 +179,52 @@ class SemanticDetector(BaseDetector):
                 f"Failed to load ONNX semantic model from {onnx_model_path}: {e}"
             )
 
+    def _init_triton(
+        self, onnx_model_path: str, triton_url: str, triton_model_name: str
+    ) -> None:
+        """
+        Tokenizer/id2label still come from the local ONNX export directory —
+        Triton serves the model graph only, so it has no tokenizer of its
+        own to ask for. This means `model/export_onnx.py` must still be run
+        first even though the graph itself is served remotely.
+        """
+        onnx_dir = Path(onnx_model_path)
+        if not (onnx_dir / "model.onnx").exists():
+            logger.warning(
+                f"ONNX export not found at {onnx_model_path} (needed for tokenizer "
+                "and id2label even though inference runs on Triton). Semantic "
+                "detector will return no findings. Run `python model/export_onnx.py` "
+                "first."
+            )
+            return
+
+        try:
+            # gRPC, not HTTP: Triton's gRPC endpoint uses a persistent HTTP/2
+            # connection and protobuf framing, avoiding a new TCP handshake +
+            # text-header parse per call that the HTTP client pays each time.
+            # See triton_deploy/compare_http_grpc.py for the measured delta.
+            import tritonclient.grpc as grpcclient
+            from transformers import AutoConfig, AutoTokenizer
+
+            client = grpcclient.InferenceServerClient(url=triton_url)
+            if not client.is_server_ready():
+                raise RuntimeError(f"Triton server at {triton_url} is not ready")
+            if not client.is_model_ready(triton_model_name):
+                raise RuntimeError(
+                    f"Triton model '{triton_model_name}' is not ready at {triton_url}"
+                )
+
+            self.triton_client = client
+            self.tokenizer = AutoTokenizer.from_pretrained(str(onnx_dir))
+            self.id2label = AutoConfig.from_pretrained(str(onnx_dir)).id2label
+            self._available = True
+            logger.info(
+                f"Semantic model loaded (triton backend) — gRPC {triton_url}, "
+                f"model '{triton_model_name}', tokenizer from {onnx_model_path}"
+            )
+        except Exception as e:  # noqa: BLE001 — intentional graceful fallback if Triton is unreachable
+            logger.warning(f"Failed to connect to Triton at {triton_url}: {e}")
+
     @property
     def is_available(self) -> bool:
         """Check if the semantic model is loaded and ready."""
@@ -185,6 +242,8 @@ class SemanticDetector(BaseDetector):
         """Synchronous inference — runs in thread pool."""
         if self.backend == "onnx":
             logits, offset_mapping = self._infer_onnx(text)
+        elif self.backend == "triton":
+            logits, offset_mapping = self._infer_triton(text)
         else:
             logits, offset_mapping = self._infer_torch(text)
         return self._decode(text, logits, offset_mapping)
@@ -221,6 +280,45 @@ class SemanticDetector(BaseDetector):
         outputs = self.session.run(None, feed)
 
         return outputs[0][0], offset_mapping
+
+    def _infer_triton(self, text: str) -> tuple[np.ndarray, list[tuple[int, int]]]:
+        # self.triton_client (one instance, created in _init_triton) is
+        # shared across every thread-pool worker calling this method
+        # concurrently. That's intentional and safe: tritonclient's *gRPC*
+        # client wraps a single grpc.Channel meant to be reused across
+        # concurrent calls (that's the whole point of HTTP/2 multiplexing —
+        # see triton_deploy/compare_http_grpc.py for why gRPC was chosen
+        # over HTTP here in the first place). This differs from
+        # triton_deploy/verify_client.py's HTTP client, which creates one
+        # instance per thread — tritonclient's *HTTP* client is documented
+        # as not safe to share across concurrent in-flight requests.
+        import tritonclient.grpc as grpcclient
+
+        inputs = self.tokenizer(
+            text,
+            truncation=True,
+            max_length=128,  # matches training max_length
+            return_offsets_mapping=True,
+        )
+        offset_mapping = inputs.pop("offset_mapping")
+
+        input_ids = np.array([inputs["input_ids"]], dtype=np.int64)
+        attention_mask = np.array([inputs["attention_mask"]], dtype=np.int64)
+
+        infer_inputs = [
+            grpcclient.InferInput("input_ids", input_ids.shape, "INT64"),
+            grpcclient.InferInput("attention_mask", attention_mask.shape, "INT64"),
+        ]
+        infer_inputs[0].set_data_from_numpy(input_ids)
+        infer_inputs[1].set_data_from_numpy(attention_mask)
+
+        outputs = [grpcclient.InferRequestedOutput("logits")]
+        result = self.triton_client.infer(
+            self.triton_model_name, inputs=infer_inputs, outputs=outputs
+        )
+        logits = result.as_numpy("logits")[0]  # drop batch dim -> (seq_len, num_labels)
+
+        return logits, offset_mapping
 
     def _decode(
         self,

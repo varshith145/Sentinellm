@@ -75,19 +75,34 @@ class Settings(BaseSettings):
         default=True,
         description="Enable semantic detector (disable if model not trained yet)",
     )
-    inference_backend: Literal["torch", "onnx"] = Field(
+    inference_backend: Literal["torch", "onnx", "triton"] = Field(
         default="torch",
         description=(
             "Semantic detector inference backend. 'torch' loads the model "
             "directly (model_path / semantic_model_id, as before). 'onnx' runs "
             "the exported graph at onnx_model_path via ONNX Runtime — requires "
             "running model/export_onnx.py first, since no ONNX build is "
-            "published to the Hub."
+            "published to the Hub. 'triton' sends inference over gRPC to a "
+            "Triton Inference Server serving that same ONNX graph (see "
+            "triton_deploy/) — tokenization still happens locally, using the "
+            "tokenizer files at onnx_model_path."
         ),
     )
     onnx_model_path: str = Field(
         default="./model/onnx",
         description="Path to the ONNX-exported model directory (produced by model/export_onnx.py)",
+    )
+    triton_url: str = Field(
+        default="localhost:8101",
+        description=(
+            "Triton Inference Server gRPC endpoint (host:port). Default matches "
+            "triton_deploy/run.sh's host port mapping for Triton's gRPC port "
+            "(container 8001 -> host 8101, since the gateway itself owns 8000)."
+        ),
+    )
+    triton_model_name: str = Field(
+        default="sentinellm",
+        description="Model name as registered in the Triton model repository (triton_deploy/models/).",
     )
 
     # --- Policy ---

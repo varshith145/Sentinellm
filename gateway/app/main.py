@@ -104,6 +104,8 @@ async def lifespan(app: FastAPI):
                 model_id=settings.semantic_model_id,
                 inference_backend=settings.inference_backend,
                 onnx_model_path=settings.onnx_model_path,
+                triton_url=settings.triton_url,
+                triton_model_name=settings.triton_model_name,
             )
             if semantic_detector.is_available:
                 detectors.append(semantic_detector)

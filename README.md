@@ -11,20 +11,33 @@ license: mit
 
 # SentinelLM 🛡️
 
-> **A self-hosted AI gateway that intercepts LLM traffic, detects PII and secrets across three detection passes, enforces configurable policies, and logs every decision — without sending your data anywhere.**
+> A self-hosted AI gateway that intercepts LLM traffic, detects PII and secrets across three detection passes, enforces configurable policies, and logs every decision — without sending your data anywhere.
 
-### 🔴 [**Live demo →**](https://huggingface.co/spaces/varshith145/sentinellm) &nbsp;paste text and watch detection run (direct app: https://varshith145-sentinellm.hf.space)
+### 🔴 [**Live demo →**](https://huggingface.co/spaces/varshith145/sentinellm) &nbsp;·&nbsp; 📊 [**Full benchmarks →**](BENCHMARKS.md) &nbsp;·&nbsp; 📖 [**Eval methodology →**](eval/results.md)
 
-The public demo runs the **detection pipeline only** (demo mode — LLM proxy disabled). Try the obfuscated example `reach me at john dot smith at company dot com` to see the fine-tuned model catch what regex can't.
+Demo runs the **detection pipeline only** (LLM proxy disabled). Try `reach me at john dot smith at company dot com` — regex can't catch it, the fine-tuned model does.
 
 <p align="center">
   <img src="https://img.shields.io/badge/Python-3.11-blue?logo=python&logoColor=white" />
   <img src="https://img.shields.io/badge/FastAPI-0.100+-green?logo=fastapi&logoColor=white" />
   <img src="https://img.shields.io/badge/DistilBERT-NER%20F1%3D0.849-orange?logo=huggingface&logoColor=white" />
-  <img src="https://img.shields.io/badge/Tests-298%20passed-brightgreen?logo=pytest&logoColor=white" />
+  <img src="https://img.shields.io/badge/Tests-299%20passed-brightgreen?logo=pytest&logoColor=white" />
   <img src="https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white" />
   <img src="https://img.shields.io/badge/License-MIT-lightgrey" />
 </p>
+
+### At a glance
+
+| | |
+|---|---|
+| **Tests** | 299 passing in CI (287 backend · 1 ONNX export parity · 11 console) + 3 Triton integration tests (local only, need Docker) |
+| **Detection F1** | **0.9574** micro-avg — full 3-pass pipeline (regex + Presidio + semantic), IoU≥0.5 span matching, [methodology](eval/results.md) |
+| **Best measured throughput** | **516 req/s** (ONNX Runtime, INT8, in-process) vs **255 req/s** PyTorch baseline — 2.0x, at c=100 |
+| **Best measured p95 @ c=100** | **479ms** (ONNX INT8) vs **802ms** PyTorch baseline |
+| **INT8 quantization cost** | −0.0112 F1 (0.9574 → 0.9462) for ~4x smaller model, +38–57% throughput — [full tradeoff table](BENCHMARKS.md#summary-tradeoff-table) |
+| **Serving backends** | PyTorch · ONNX Runtime · Triton Inference Server (gRPC, dynamic batching) — one env var, see [Serving Architecture](#serving-architecture) |
+
+Every number above is reproduced by a command in [`BENCHMARKS.md`](BENCHMARKS.md) — the earlier sections there are tied to a specific git SHA someone else can check out; the Triton and quantization sections are marked as measured against work still in progress, with a plain note saying so, not silently presented as equally locked-down. Numbers are honest, not cherry-picked — Triton is *slower* than in-process ONNX Runtime for this workload, and that's stated plainly there, with the mechanism explained.
 
 ---
 
@@ -117,6 +130,49 @@ Regex and Presidio run in parallel via `asyncio.gather`. The semantic pass — b
 
 ---
 
+## Serving Architecture
+
+The semantic pass's model backend is swappable with one environment variable — `SENTINELLM_INFERENCE_BACKEND` — no code change, no redeploy of anything but the gateway itself:
+
+```mermaid
+flowchart LR
+    Client(["Client"]) -->|"/scan or /v1/chat/completions"| GW["SentinelLM Gateway"]
+
+    subgraph pipeline ["Detection pipeline"]
+        direction LR
+        GW --> Regex["Pass 1 · Regex"]
+        GW --> Presidio["Pass 2 · Presidio"]
+        Regex --> Orch{"Conclusive?"}
+        Presidio --> Orch
+    end
+
+    Orch -->|"yes → skip"| Decision["Policy decision"]
+    Orch -->|"no"| Semantic["Pass 3 · Semantic NER"]
+
+    Semantic --> Backend{{"SENTINELLM_INFERENCE_BACKEND"}}
+    Backend -->|"torch (default)"| Torch["PyTorch<br/>in-process"]
+    Backend -->|"onnx"| ONNXR["ONNX Runtime<br/>in-process · fp32 or INT8"]
+    Backend -->|"triton"| TritonSrv["Triton Inference Server<br/>gRPC · dynamic_batching<br/>fp32 or INT8"]
+
+    Torch --> Decision
+    ONNXR --> Decision
+    TritonSrv --> Decision
+```
+
+Same BIO-decoding logic runs after every backend (`SemanticDetector._decode`) — the backends only differ in how raw logits get produced, never in how they're interpreted, which is what makes the parity tests below meaningful rather than trivially true. Three backends, two of them quantizable:
+
+| Backend | Where inference runs | Precision | Test coverage |
+|---|---|---|---|
+| `torch` (default) | In-process, same Python process as the gateway | fp32 | Full suite |
+| `onnx` | In-process, ONNX Runtime session | fp32 or INT8 | `tests/test_onnx_parity.py` (fp32 vs PyTorch, 50 fixed inputs, max logit diff <1e-4) |
+| `triton` | Separate Triton Inference Server process, over gRPC | fp32 or INT8 | `tests/test_triton_backend.py` (vs in-process ONNX, same 50 inputs, both precisions — see below) |
+
+**What each is actually for, measured, not assumed:** `onnx` (fp32 or INT8) is the fastest option for this workload — in-process, no network hop. `triton` exists for reasons other than raw throughput on a single box: decoupling the inference tier from the gateway tier, GPU deployment, serving multiple models from one process. Measured directly: Triton is *slower* than in-process ONNX Runtime here, at both precisions, because `dynamic_batching` needs same-shape requests to combine and this gateway tokenizes each request to its own natural length — full mechanism and numbers in [`BENCHMARKS.md`](BENCHMARKS.md#why-dynamic_batching-barely-engaged-under-real-gateway-traffic-at-either-precision).
+
+INT8 quantization (`model/quantize_onnx.py`, dynamic, via `optimum.onnxruntime.ORTQuantizer`) shrinks the model ~4x and improves throughput inside *either* serving path — it's a property of the graph, not of which backend serves it — at a small, directly measured accuracy cost (F1 0.9574 → 0.9462). Full derivation, per-example parity checks (49/50 exact match between in-process and Triton INT8, one deterministic disagreement traced to an ONNX Runtime version skew between environments — not hand-waved past), and the honest F1 delta are in [`BENCHMARKS.md`](BENCHMARKS.md#dynamic-int8-quantization-modelquantize_onnxpy).
+
+---
+
 ## Model Performance
 
 The semantic NER model is trained on 410+ synthetic obfuscated examples with 120 hard negatives, using a custom `WeightedLossTrainer` to correct class imbalance:
@@ -156,29 +212,38 @@ matches, not degenerate wide-span luck), and the 12 hard-negative examples in
 the split produced zero false positives. Full methodology and the robustness
 check in [`eval/results.md`](eval/results.md).
 
-**Load test, `/scan` (detection only, no LLM in the path), 4 `uvicorn`
-worker processes — the same config `gateway/Dockerfile` runs in production
-(docker-compose's Postgres stack; the HF Spaces demo is a separate,
-single-container SQLite deployment — see Design Notes), Apple M4:**
+**Backend comparison, `/scan`, concurrency=100, 4 `uvicorn` workers, one
+continuous session so the rows are comparable to each other (full
+methodology, every other concurrency level, and how a live video call
+silently contaminated — then got caught and corrected in — an earlier pass
+at this exact table, in [`BENCHMARKS.md`](BENCHMARKS.md)):**
 
 ```bash
-python bench/load_test.py --url http://localhost:8000 --concurrency 100 --duration 60
+python benchmarks/loadtest.py --url http://localhost:8000
 ```
 
-| Concurrency | Throughput | p50 | p95 | p99 |
-|---|---|---|---|---|
-| 10 | 238.8 req/s | 34.69ms | 87.21ms | 98.87ms |
-| 100 | 258.5 req/s | 362.54ms | 732.37ms | 989.32ms |
+| Backend | Micro-F1 | p95 @ c=100 | req/s @ c=100 |
+|---|---|---|---|
+| PyTorch (baseline) | 0.9574 | 802ms | 255.1 |
+| ONNX Runtime, fp32 (in-process) | 0.9574 | 775ms | 372.7 |
+| **ONNX Runtime, INT8 (in-process)** | 0.9462 | **479ms** | **516.2** |
+| Triton + dynamic_batching, fp32 | 0.9574 | 2289ms | 144.0 |
+| Triton + dynamic_batching, INT8 | 0.9462 | 1124ms | 225.7 |
 
-That's 2.04x the throughput and 20% lower p95 than a single `--workers 1`
-process running the original unconditional 3-pass pipeline (127.2 req/s,
-913.53ms p95) — from two changes: the orchestrator now skips the ~150ms
-semantic pass once regex already gives a confident answer, and 4 worker
-processes spread whatever's left across cores. See
-[`bench/results.md`](bench/results.md) for the full investigation — what
-was tried, measured, and ruled out before landing here — and Design Notes
-below for why the accuracy cost of the short-circuit had to be checked
-against `eval/run_eval.py`, not assumed.
+ONNX Runtime INT8, in-process, is the best measured option on both axes —
+2.0x PyTorch's throughput at a −1.2% F1 cost that's checked at the
+per-example level, not just aggregate (see Serving Architecture above).
+Full reproduce commands, all five concurrency sweeps, the HTTP-vs-gRPC
+client transport comparison, and the quantization methodology are all in
+[`BENCHMARKS.md`](BENCHMARKS.md) — this table is the summary, that file is
+the receipts.
+
+**Earlier optimization investigation** (the short-circuit + multi-worker
+change that took the original unconditional 3-pass pipeline from 127.2 req/s
+to 258.5 req/s, before the multi-backend work above existed) is preserved in
+[`bench/results.md`](bench/results.md) — what was tried, measured, and
+ruled out, and Design Notes below for why the accuracy cost of the
+short-circuit had to be checked against `eval/run_eval.py`, not assumed.
 
 ---
 
@@ -515,9 +580,21 @@ cd gateway && python3 -m pytest ../tests/ -v
 | `test_golden_path.py` | 1 | Console creates a BLOCK policy → gateway request trips it → audit view shows it → metric increments |
 
 Counted on Python 3.12 with the semantic detector disabled, matching CI's
-`SENTINELLM_SEMANTIC_MODEL_ENABLED=false` job. Plus 11 Vitest/RTL tests for
-the console (see [Console](#console-react--typescript) above) — **298
-tests total**, which is what the badge at the top counts.
+`SENTINELLM_SEMANTIC_MODEL_ENABLED=false` job (287). Two more test files run
+in separate CI jobs, with different dependency installs, and aren't part of
+that count above: `test_onnx_parity.py` (1 test — PyTorch vs ONNX export,
+`onnx-parity` job) and the console's 11 Vitest/RTL tests (`console` job) —
+**299 tests total in CI**, which is what the badge at the top counts.
+
+`tests/test_triton_backend.py` (3 tests: fp32 parity, INT8 parity, and the
+regex-short-circuit-vs-Triton check) is **not** part of any CI job — it
+needs a live Triton container, which CI doesn't run. Local-only, requires
+`./triton_deploy/run.sh` first: `python -m pytest tests/test_triton_backend.py -v`.
+Current result: 2 passed, 1 `xfail` (the INT8 parity case — 49/50 exact
+match, one deterministic disagreement traced to an ONNX Runtime version
+skew between the local install and Triton's bundled version; see
+[`BENCHMARKS.md`](BENCHMARKS.md) for the full explanation, not swept under
+the `xfail`).
 
 ---
 
@@ -552,11 +629,22 @@ SentinelLM/
 │   │   ├── synthetic_obfuscated.jsonl
 │   │   └── hard_negatives.jsonl
 │   ├── train.py                      # WeightedLossTrainer, 12 epochs
-│   └── evaluate.py                   # seqeval F1/precision/recall — raw model only
+│   ├── evaluate.py                   # seqeval F1/precision/recall — raw model only
+│   ├── export_onnx.py                # PyTorch -> ONNX (model/onnx/, gitignored)
+│   └── quantize_onnx.py              # ONNX -> dynamic INT8 (model/onnx-int8/, gitignored)
 ├── eval/
-│   └── run_eval.py                   # Full-pipeline eval on the same held-out split
+│   └── run_eval.py                   # Full-pipeline eval — backend-selectable (--backend torch/onnx/triton)
+├── benchmarks/
+│   └── loadtest.py                   # Seeded /scan load-test sweep -> BENCHMARKS.md
 ├── bench/
-│   └── load_test.py                  # Load test against /scan, writes bench/results.md
+│   └── load_test.py                  # Original single-point investigation, see bench/results.md
+├── triton_deploy/                    # Triton Inference Server deployment (fp32 + INT8 models)
+│   ├── models/sentinellm/config.pbtxt
+│   ├── models/sentinellm_int8/config.pbtxt
+│   ├── build_model_repo.py           # Copies model/onnx{,-int8}/model.onnx into the repo layout
+│   ├── run.sh                        # docker run, onnxruntime backend, CPU
+│   ├── verify_client.py              # Correctness + dynamic_batching proof (HTTP client)
+│   └── compare_http_grpc.py          # HTTP vs gRPC client transport latency
 ├── console/                          # React/TS console (Vite, strict TS, Tailwind)
 │   ├── src/
 │   │   ├── api/                      # openapi-typescript-generated client + TanStack Query hooks
@@ -579,7 +667,10 @@ SentinelLM/
 │   ├── test_orchestrator.py
 │   ├── test_integration.py
 │   ├── test_streaming.py
-│   └── test_console_api.py
+│   ├── test_console_api.py
+│   ├── test_onnx_parity.py           # PyTorch vs ONNX export, separate CI job
+│   └── test_triton_backend.py        # vs in-process ONNX, fp32 + INT8 — local only, needs Docker
+├── BENCHMARKS.md                     # Reproducible load-test + eval numbers, every backend
 ├── docker-compose.yml                # gateway + db + admin + prometheus + grafana + jaeger
 ├── Dockerfile.train
 ├── train.sh
@@ -599,6 +690,10 @@ SentinelLM/
 | `SENTINELLM_POLICY_PATH` | `/app/policies/default.yaml` | Seed file, read once if `policies` table is empty |
 | `SENTINELLM_MODEL_PATH` | `/app/model/trained` | Semantic model path |
 | `SENTINELLM_SEMANTIC_MODEL_ENABLED` | `true` | Enable/disable semantic detector |
+| `SENTINELLM_INFERENCE_BACKEND` | `torch` | Semantic detector inference backend: `torch`, `onnx`, or `triton`. See [`BENCHMARKS.md`](BENCHMARKS.md) for measured latency across all three. |
+| `SENTINELLM_ONNX_MODEL_PATH` | `./model/onnx` | ONNX export directory (`model/export_onnx.py`), used by both `onnx` and `triton` backends — `triton` still reads the tokenizer from here |
+| `SENTINELLM_TRITON_URL` | `localhost:8101` | Triton Inference Server gRPC endpoint, used when `SENTINELLM_INFERENCE_BACKEND=triton` (see `triton_deploy/`) |
+| `SENTINELLM_TRITON_MODEL_NAME` | `sentinellm` | Model name in the Triton model repository |
 | `SENTINELLM_DEBUG` | `false` | Debug logging |
 | `SENTINELLM_CONSOLE_API_KEY` | `""` | `X-API-Key` required on `/api/v1/*`; empty disables auth |
 | `SENTINELLM_CONSOLE_CORS_ORIGINS` | `http://localhost:5173` | Comma-separated allowlist for `/api/v1/*` |

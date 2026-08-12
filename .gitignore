@@ -36,6 +36,7 @@ model/trained/
 model/base_model/
 model/data/processed/
 model/onnx/
+model/onnx-int8/
 triton_deploy/models/**/*.onnx
 
 # OS

@@ -1,0 +1,43 @@
+name: "sentinellm_int8"
+backend: "onnxruntime"
+max_batch_size: 8
+
+input [
+  {
+    name: "input_ids"
+    data_type: TYPE_INT64
+    dims: [ -1 ]
+  },
+  {
+    name: "attention_mask"
+    data_type: TYPE_INT64
+    dims: [ -1 ]
+  }
+]
+
+output [
+  {
+    name: "logits"
+    data_type: TYPE_FP32
+    dims: [ -1, 5 ]
+  }
+]
+
+# Same weights as sentinellm/, dynamically quantized to INT8 by
+# model/quantize_onnx.py (weights only — output dtype is still FP32;
+# dynamic quantization computes activation ranges per-inference and
+# dequantizes back to FP32 at each quantized op's output). Batching
+# caveat is identical to sentinellm/config.pbtxt — see that file — and
+# instance_group/dynamic_batching are kept identical to sentinellm/ on
+# purpose, so this is a same-deployment-shape comparison: the only
+# variable between the two models is the weight precision.
+dynamic_batching {
+  max_queue_delay_microseconds: 5000
+}
+
+instance_group [
+  {
+    count: 2
+    kind: KIND_CPU
+  }
+]
